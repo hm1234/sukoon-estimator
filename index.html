@@ -491,6 +491,19 @@
     }
     .sync-msg.ok  { color: var(--green); display: block; }
     .sync-msg.err { color: var(--red);   display: block; }
+
+    /* ══ CLOUD SYNC ══ */
+    .cloud-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--text3);
+      flex-shrink: 0;
+      transition: background .3s;
+    }
+    .cloud-dot.ok   { background: var(--green); }
+    .cloud-dot.err  { background: var(--red); }
+    .cloud-dot.busy { background: #ff9f0a; animation: cpulse .9s ease-in-out infinite; }
+    @keyframes cpulse { 0%,100%{opacity:1} 50%{opacity:.3} }
   </style>
 </head>
 <body>
@@ -782,9 +795,50 @@
         </div>
       </div>
 
-      <!-- Sync Settings -->
+      <!-- Cloud Sync -->
       <div class="section">
-        <div class="section-header">Sync to Other Devices</div>
+        <div class="section-header">Cloud Sync</div>
+        <p class="settings-note">Settings auto-save to a private GitHub Gist on every change. Enter your token on any device to pull settings instantly — same link, always up to date.</p>
+        <div class="group" style="margin-top:8px">
+
+          <!-- Status row -->
+          <div class="row">
+            <div class="row-icon icon-brown">☁️</div>
+            <div class="row-label">
+              <div class="row-label-text" id="cloudLabel">Not Connected</div>
+              <div class="row-label-sub" id="cloudSub">Enter a GitHub token below</div>
+            </div>
+            <div class="cloud-dot" id="cloudDot"></div>
+          </div>
+
+          <!-- Token input row -->
+          <div class="row">
+            <div class="row-icon icon-dark">🔑</div>
+            <div class="row-label">
+              <input class="inline-full" id="cloudToken" type="password"
+                placeholder="Paste GitHub token (gist scope)…"
+                autocomplete="new-password" autocorrect="off" spellcheck="false"/>
+            </div>
+          </div>
+
+          <!-- Connect button -->
+          <div class="row" style="padding:0">
+            <button id="cloudBtn" class="action-btn btn-warm"
+              style="border-radius:0;width:100%;margin:0;font-size:15px"
+              onclick="connectCloud()">☁️ Connect &amp; Sync</button>
+          </div>
+          <div id="cloudMsg" class="sync-msg"></div>
+
+        </div>
+        <p class="settings-note" style="margin-top:6px">
+          <a href="https://github.com/settings/tokens/new?scopes=gist&description=Sukoon+Sync"
+             target="_blank" style="color:var(--text2)">→ Create a free GitHub token with "gist" scope</a>
+        </p>
+      </div>
+
+      <!-- QR / Manual Sync -->
+      <div class="section">
+        <div class="section-header">Manual Sync (QR / Link)</div>
         <p class="settings-note">Export a QR code or link — open it on any device to load your settings instantly.</p>
         <div class="group" style="margin-top:8px">
 
@@ -845,6 +899,14 @@
 </div><!-- /app -->
 
 <script>
+// ═══════════════════════════════════════════════
+// CLOUD SYNC STATE
+// ═══════════════════════════════════════════════
+let cloudGistId  = null;
+let cloudTimer   = null;
+const GIST_DESC  = 'Sukoon Coffee Co. \u2014 Estimator Settings';
+const GIST_FILE  = 'sukoon-settings.json';
+
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
@@ -943,6 +1005,17 @@ window.addEventListener('DOMContentLoaded', () => {
   renderGuestTiers();
   renderTravelTiers();
   updateQuote();
+
+  // Reconnect cloud sync if previously set up
+  const storedToken  = retrieveToken();
+  const storedGistId = localStorage.getItem('sukoon_cloud_gist');
+  if (storedToken && storedGistId) {
+    cloudGistId = storedGistId;
+    setCloudUI('busy', 'Loading from cloud…');
+    cloudLoadSettings(storedToken, storedGistId)
+      .then(() => setCloudUI('ok'))
+      .catch(() => setCloudUI('err', 'Offline — using local settings'));
+  }
 });
 
 // ═══════════════════════════════════════════════
@@ -953,12 +1026,14 @@ const num = id => parseFloat($(id).value) || 0;
 const int = id => parseInt($(id).value) || 0;
 
 function save() {
-  localStorage.setItem('sukoon_ios_v1', JSON.stringify({
+  const settings = {
     homeZip:    $('homeZip').value,
     outdoorPct: num('outdoorPct'),
     guestTiers:  S.guestTiers,
     travelTiers: S.travelTiers,
-  }));
+  };
+  localStorage.setItem('sukoon_ios_v1', JSON.stringify(settings));
+  scheduleCloudSave(); // auto-push to GitHub Gist
 }
 
 // ═══════════════════════════════════════════════
@@ -1388,6 +1463,174 @@ function shareQuote() {
   } else {
     copyQuote();
   }
+}
+
+// ═══════════════════════════════════════════════
+// CLOUD SYNC (GitHub Gist)
+// ═══════════════════════════════════════════════
+// Token stored obfuscated — never readable in plain text in localStorage or UI
+function storeToken(t)  { localStorage.setItem('sukoon_cloud_token', btoa(t.split('').reverse().join(''))); }
+function retrieveToken() {
+  const s = localStorage.getItem('sukoon_cloud_token');
+  if (!s) return null;
+  try { return atob(s).split('').reverse().join(''); } catch(e) { return null; }
+}
+function clearToken()   { localStorage.removeItem('sukoon_cloud_token'); }
+
+function gistHeaders(token) {
+  return {
+    'Authorization': `token ${token}`,
+    'Accept':        'application/vnd.github.v3+json',
+    'Content-Type':  'application/json',
+  };
+}
+
+function currentSettingsObj() {
+  return {
+    homeZip:    $('homeZip').value,
+    outdoorPct: num('outdoorPct'),
+    guestTiers:  S.guestTiers,
+    travelTiers: S.travelTiers,
+  };
+}
+
+async function connectCloud() {
+  const input = $('cloudToken').value.trim();
+  const token = input || retrieveToken();
+  if (!token) { showCloudMsg('Paste your GitHub token first', 'err'); return; }
+
+  setCloudUI('busy', 'Connecting…');
+  try {
+    const gistId = await findOrCreateGist(token);
+    cloudGistId = gistId;
+    storeToken(token);
+    localStorage.setItem('sukoon_cloud_gist', gistId);
+    $('cloudToken').value = ''; // clear field — token never stays visible
+    await cloudLoadSettings(token, gistId);
+    setCloudUI('ok');
+  } catch(e) {
+    setCloudUI('err', 'Failed — check your token has gist scope');
+  }
+}
+
+function disconnectCloud() {
+  clearTimeout(cloudTimer);
+  clearToken();
+  localStorage.removeItem('sukoon_cloud_gist');
+  cloudGistId = null;
+  setCloudUI('idle');
+  $('cloudBtn').textContent = '☁️ Connect & Sync';
+  $('cloudBtn').onclick = connectCloud;
+}
+
+async function findOrCreateGist(token) {
+  const h = gistHeaders(token);
+  // Try stored gist ID first
+  const stored = localStorage.getItem('sukoon_cloud_gist');
+  if (stored) {
+    const r = await fetch(`https://api.github.com/gists/${stored}`, { headers: h });
+    if (r.ok) return stored;
+  }
+  // Search existing gists for ours
+  const list = await fetch('https://api.github.com/gists?per_page=100', { headers: h });
+  if (!list.ok) throw new Error('Auth failed');
+  const gists = await list.json();
+  const match = gists.find(g => g.description === GIST_DESC);
+  if (match) return match.id;
+  // Create new private gist
+  const create = await fetch('https://api.github.com/gists', {
+    method: 'POST', headers: h,
+    body: JSON.stringify({
+      description: GIST_DESC, public: false,
+      files: { [GIST_FILE]: { content: JSON.stringify(currentSettingsObj(), null, 2) } },
+    }),
+  });
+  if (!create.ok) throw new Error('Create failed');
+  return (await create.json()).id;
+}
+
+async function cloudLoadSettings(token, gistId) {
+  const r = await fetch(`https://api.github.com/gists/${gistId}`, { headers: gistHeaders(token) });
+  if (!r.ok) throw new Error('Load failed');
+  const d = await r.json();
+  const content = d.files[GIST_FILE]?.content;
+  if (!content) return;
+  const cfg = JSON.parse(content);
+  if (cfg.homeZip)     { $('homeZip').value = cfg.homeZip; doZipLookup(cfg.homeZip, 'home'); }
+  if (cfg.outdoorPct !== undefined) $('outdoorPct').value = cfg.outdoorPct;
+  if (cfg.guestTiers)  { S.guestTiers  = cfg.guestTiers;  renderGuestTiers(); }
+  if (cfg.travelTiers) { S.travelTiers = cfg.travelTiers; renderTravelTiers(); }
+  localStorage.setItem('sukoon_ios_v1', JSON.stringify(cfg));
+  updateQuote();
+}
+
+function scheduleCloudSave() {
+  const token  = retrieveToken();
+  const gistId = cloudGistId || localStorage.getItem('sukoon_cloud_gist');
+  if (!token || !gistId) return;
+  clearTimeout(cloudTimer);
+  cloudTimer = setTimeout(() => pushCloudSave(token, gistId), 3000);
+}
+
+async function pushCloudSave(token, gistId) {
+  setCloudUI('busy', 'Saving…');
+  try {
+    await fetch(`https://api.github.com/gists/${gistId}`, {
+      method: 'PATCH', headers: gistHeaders(token),
+      body: JSON.stringify({
+        files: { [GIST_FILE]: { content: JSON.stringify(currentSettingsObj(), null, 2) } },
+      }),
+    });
+    setCloudUI('ok');
+  } catch(e) {
+    setCloudUI('err', 'Save failed — will retry next change');
+  }
+}
+
+function setCloudUI(state, customSub) {
+  const dot   = $('cloudDot');
+  const label = $('cloudLabel');
+  const sub   = $('cloudSub');
+  const btn   = $('cloudBtn');
+  dot.className = 'cloud-dot';
+  const t = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  switch (state) {
+    case 'ok':
+      label.textContent = '☁️ Cloud Sync Active';
+      sub.textContent   = customSub || `Synced · ${t}`;
+      dot.classList.add('ok');
+      btn.textContent   = 'Disconnect';
+      btn.disabled      = false;
+      btn.onclick       = disconnectCloud;
+      break;
+    case 'busy':
+      label.textContent = '☁️ Syncing…';
+      sub.textContent   = customSub || 'Working…';
+      dot.classList.add('busy');
+      btn.disabled      = true;
+      break;
+    case 'err':
+      label.textContent = 'Sync Error';
+      sub.textContent   = customSub || 'Check token and reconnect';
+      dot.classList.add('err');
+      btn.textContent   = 'Retry';
+      btn.disabled      = false;
+      btn.onclick       = connectCloud;
+      break;
+    default: // idle
+      label.textContent = 'Not Connected';
+      sub.textContent   = 'Enter a GitHub token below';
+      btn.textContent   = '☁️ Connect & Sync';
+      btn.disabled      = false;
+      btn.onclick       = connectCloud;
+  }
+}
+
+function showCloudMsg(msg, type) {
+  const el = $('cloudMsg');
+  el.textContent = msg;
+  el.className = 'sync-msg ' + type;
+  setTimeout(() => { el.className = 'sync-msg'; }, 4000);
 }
 
 // ═══════════════════════════════════════════════
