@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="Sukoon"/>
+  <meta name="theme-color" content="#110704"/>
+  <link rel="apple-touch-icon" href="icon.png"/>
+  <link rel="manifest" href="manifest.json"/>
+  <title>Sukoon Estimator</title>
+  <style>
+    /* ══ TOKENS ══ */
+    :root {
+      --bg:        #110704;
+      --bg2:       #1b0d07;
+      --bg3:       #251208;
+      --sep:       rgba(255,255,255,.08);
+      --sep2:      rgba(255,255,255,.14);
+      --white:     #ffffff;
+      --text:      #f5f0ec;
+      --text2:     #b8b0a8;
+      --text3:     #7a6a5c;
+      --red:       #ff453a;
+      --green:     #32d74b;
+      --tab-h:     calc(56px + env(safe-area-inset-bottom));
+      --top-h:     calc(52px + env(safe-area-inset-top));
+    }
+
+    /* ══ RESET ══ */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body { height: 100%; overflow: hidden; background: var(--bg); }
+
+    body {
+      font-family: -apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif;
+      font-size: 16px;
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ══ LAYOUT SHELL ══ */
+    #app { display: flex; flex-direction: column; height: 100%; }
+
+    /* ══ TOP BAR ══ */
+    .topbar {
+      flex-shrink: 0;
+      height: var(--top-h);
+      padding-top: env(safe-area-inset-top);
+      background: rgba(17,7,4,.88);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-bottom: .5px solid var(--sep2);
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      padding-left: 18px;
+      padding-right: 18px;
+      padding-bottom: 10px;
+      position: relative;
+      z-index: 100;
+    }
+    .topbar-title {
+      font-family: -apple-system, sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: var(--white);
+      letter-spacing: -.3px;
+    }
+    .topbar-brand {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 20px;
+      font-weight: 400;
+      color: var(--white);
+      letter-spacing: .5px;
+      line-height: 1;
+    }
+    .topbar-action {
+      font-size: 15px;
+      color: rgba(255,255,255,.55);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 4px;
+      font-family: inherit;
+    }
+    .topbar-action:active { opacity: .5; }
+
+    /* ══ PAGES ══ */
+    .pages { flex: 1; overflow: hidden; position: relative; }
+    .page {
+      position: absolute;
+      inset: 0;
+      overflow-y: auto;
+      overflow-x: hidden;
+      -webkit-overflow-scrolling: touch;
+      padding-bottom: 12px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .2s;
+    }
+    .page.active { opacity: 1; pointer-events: all; }
+
+    /* ══ TAB BAR ══ */
+    .tabbar {
+      flex-shrink: 0;
+      height: var(--tab-h);
+      padding-bottom: env(safe-area-inset-bottom);
+      background: rgba(17,7,4,.92);
+      backdrop-filter: saturate(180%) blur(20px);
+      -webkit-backdrop-filter: saturate(180%) blur(20px);
+      border-top: .5px solid var(--sep2);
+      display: flex;
+    }
+    .tab {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      cursor: pointer;
+      user-select: none;
+      padding-top: 6px;
+      transition: opacity .15s;
+    }
+    .tab:active { opacity: .6; }
+    .tab-icon { font-size: 22px; line-height: 1; }
+    .tab-label { font-size: 10px; font-weight: 500; letter-spacing: .2px; color: var(--text3); }
+    .tab.active .tab-label { color: var(--white); }
+    .tab.active .tab-icon { filter: brightness(1.4); }
+
+    /* ══ SECTION / GROUP ══ */
+    .section { padding: 0 18px; margin-top: 26px; }
+    .section:first-child { margin-top: 18px; }
+
+    .section-header {
+      font-size: 12px;
+      font-weight: 500;
+      letter-spacing: .6px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 8px;
+      padding-left: 4px;
+    }
+
+    .group {
+      background: var(--bg2);
+      border-radius: 14px;
+      overflow: hidden;
+    }
+
+    .row {
+      display: flex;
+      align-items: center;
+      min-height: 52px;
+      padding: 10px 16px;
+      gap: 12px;
+      position: relative;
+    }
+    .row + .row::before {
+      content: '';
+      position: absolute;
+      top: 0; left: 16px; right: 0;
+      height: .5px;
+      background: var(--sep);
+    }
+    .row-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 15px;
+      flex-shrink: 0;
+    }
+    .icon-brown  { background: #3d1a08; }
+    .icon-dark   { background: #2a1508; }
+    .icon-stone  { background: #2e1e14; }
+
+    .row-label { flex: 1; }
+    .row-label-text { font-size: 16px; color: var(--text); font-weight: 400; }
+    .row-label-sub  { font-size: 12px; color: var(--text3); margin-top: 1px; }
+
+    /* ══ NATIVE-FEEL INPUTS ══ */
+    .row-value {
+      font-size: 16px;
+      color: var(--text2);
+      text-align: right;
+      flex-shrink: 0;
+    }
+    input.inline {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text2);
+      font-size: 16px;
+      font-family: inherit;
+      text-align: right;
+      width: 100px;
+    }
+    input.inline::placeholder { color: var(--text3); }
+    input.inline-sm { width: 70px; }
+    input.inline-full {
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--text);
+      font-size: 16px;
+      font-family: inherit;
+      width: 100%;
+    }
+    input.inline-full::placeholder { color: var(--text3); }
+
+    /* ══ iOS TOGGLE — green when on ══ */
+    .ios-toggle { position: relative; width: 51px; height: 31px; flex-shrink: 0; }
+    .ios-toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+    .ios-toggle-track {
+      position: absolute;
+      inset: 0;
+      background: #2a1a10;
+      border-radius: 16px;
+      transition: background .25s;
+      cursor: pointer;
+    }
+    .ios-toggle input:checked ~ .ios-toggle-track { background: var(--green); }
+    .ios-toggle-thumb {
+      position: absolute;
+      width: 27px; height: 27px;
+      background: #fff;
+      border-radius: 50%;
+      top: 2px; left: 2px;
+      box-shadow: 0 2px 6px rgba(0,0,0,.4);
+      transition: transform .25s cubic-bezier(.34,1.56,.64,1);
+      pointer-events: none;
+    }
+    .ios-toggle input:checked ~ .ios-toggle-track .ios-toggle-thumb {
+      transform: translateX(20px);
+    }
+
+    /* ══ SEGMENTED CONTROL ══ */
+    .segment-wrap { padding: 0 18px; margin-top: 14px; }
+    .segment {
+      display: flex;
+      background: var(--bg2);
+      border-radius: 10px;
+      padding: 3px;
+    }
+    .seg-opt {
+      flex: 1;
+      text-align: center;
+      padding: 7px 4px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text3);
+      cursor: pointer;
+      transition: background .2s, color .2s;
+      user-select: none;
+    }
+    .seg-opt.active {
+      background: var(--white);
+      color: #120600;
+      font-weight: 600;
+    }
+
+    /* ══ STEPPER ══ */
+    .stepper { display: flex; align-items: center; gap: 0; }
+    .step-btn {
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.12);
+      border: none;
+      color: var(--white);
+      font-size: 20px;
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      line-height: 1;
+      transition: background .15s;
+      font-family: inherit;
+    }
+    .step-btn:active { background: rgba(255,255,255,.25); }
+    .step-val { width: 36px; text-align: center; font-size: 16px; font-weight: 600; }
+
+    /* ══ ADDON PRICE BADGE ══ */
+    .price-tag {
+      font-size: 15px;
+      color: var(--white);
+      font-weight: 500;
+    }
+
+    /* ══ ZIP STATUS ══ */
+    .zip-info {
+      font-size: 12px;
+      color: var(--green);
+      padding: 4px 16px 8px;
+    }
+    .zip-info.err { color: var(--red); }
+    .zip-info.loading { color: var(--text3); }
+    .zip-county {
+      font-size: 11px;
+      color: var(--text3);
+      display: block;
+      margin-top: 1px;
+    }
+
+    /* ══ QUOTE PAGE ══ */
+    .quote-hero {
+      margin: 18px;
+      background: var(--bg2);
+      border-radius: 18px;
+      padding: 24px 20px;
+      text-align: center;
+    }
+    .quote-hero-brand {
+      font-family: Georgia, 'Times New Roman', serif;
+      font-style: italic;
+      font-size: 22px;
+      color: var(--white);
+      letter-spacing: .5px;
+    }
+    .quote-hero-sub { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text3); margin-top: 4px; }
+    .quote-hero-client { font-size: 14px; color: var(--text2); margin-top: 10px; min-height: 18px; }
+    .quote-total-label { font-size: 11px; color: var(--text3); margin-top: 18px; text-transform: uppercase; letter-spacing: 2px; font-weight: 600; }
+    .quote-total-amount { font-size: 46px; font-weight: 700; color: var(--white); letter-spacing: -1px; line-height: 1.1; margin-top: 4px; }
+
+    .q-row { display: flex; justify-content: space-between; align-items: center; padding: 11px 16px; font-size: 15px; position: relative; }
+    .q-row + .q-row::before { content:''; position:absolute; top:0; left:16px; right:0; height:.5px; background:var(--sep); }
+    .q-row.sub { padding-left: 32px; }
+    .q-row.sub .q-label { font-size: 14px; color: var(--text2); }
+    .q-row.sub .q-amount { font-size: 14px; color: var(--text2); }
+    .q-label { color: var(--text); }
+    .q-label.q-bold { font-weight: 600; color: var(--white); }
+    .q-amount { color: var(--text2); font-weight: 500; font-variant-numeric: tabular-nums; }
+    .q-amount.white { color: var(--white); font-weight: 700; }
+
+    .q-sec-header {
+      font-size: 12px;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      color: var(--text3);
+      padding: 14px 18px 6px;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 30px;
+      color: var(--text3);
+      font-size: 15px;
+      line-height: 1.6;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+
+    /* ══ ACTION BUTTONS ══ */
+    .action-group { padding: 0 18px; margin-top: 16px; display: flex; flex-direction: column; gap: 10px; }
+    .action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      width: 100%;
+      padding: 14px;
+      border-radius: 14px;
+      border: none;
+      font-family: inherit;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: opacity .15s;
+      -webkit-appearance: none;
+    }
+    .action-btn:active { opacity: .7; }
+    .btn-primary   { background: var(--white); color: #120600; }
+    .btn-warm      { background: #3c1e0f; color: var(--white); }
+    .btn-secondary { background: var(--bg2); color: var(--text); border: .5px solid var(--sep2); }
+    .btn-danger    { background: rgba(255,69,58,.15); color: var(--red); }
+
+    /* ══ SETTINGS PAGE ══ */
+    .settings-note {
+      font-size: 12.5px;
+      color: var(--text3);
+      padding: 6px 22px 0;
+      line-height: 1.5;
+    }
+    .tier-row { display:flex; align-items:center; gap:10px; padding:10px 16px; position:relative; }
+    .tier-row + .tier-row::before { content:''; position:absolute; top:0; left:16px; right:0; height:.5px; background:var(--sep); }
+    .tier-label { font-size:13px; color:var(--text3); width:80px; flex-shrink:0; }
+    .tier-input {
+      flex:1;
+      background: rgba(255,255,255,.07);
+      border: none;
+      border-radius: 8px;
+      padding: 7px 10px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      text-align: right;
+    }
+    .tier-input:focus { background: rgba(255,255,255,.12); }
+    .tier-del { background:none; border:none; color:var(--red); font-size:20px; cursor:pointer; padding:0 2px; opacity:.7; }
+    .tier-del:active { opacity:1; }
+    .add-row-btn {
+      display:flex; align-items:center; justify-content:center; gap:6px;
+      padding:12px 16px; font-size:15px; color:var(--text2);
+      background:none; border:none; cursor:pointer; font-family:inherit; width:100%;
+      border-top:.5px solid var(--sep);
+    }
+    .add-row-btn:active { opacity:.5; }
+
+    /* ══ SPINNER ══ */
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .spin {
+      display:inline-block; width:12px; height:12px;
+      border:2px solid rgba(255,255,255,.2);
+      border-top-color:var(--white);
+      border-radius:50%;
+      animation:spin .6s linear infinite;
+      vertical-align:middle;
+    }
+
+    /* ══ CHEVRON ══ */
+    .chevron { color:var(--text3); font-size:13px; flex-shrink:0; }
+  </style>
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <div class="topbar">
+    <div class="topbar-brand">Sukoon</div>
+    <div class="topbar-title" id="topTitle">New Quote</div>
+    <button class="topbar-action" id="topAction" onclick="handleTopAction()">⚙</button>
+  </div>
+
+  <!-- PAGES -->
+  <div class="pages">
+
+    <!-- ══ PAGE: FORM ══ -->
+    <div class="page active" id="pageForm">
+
+      <!-- Client -->
+      <div class="section">
+        <div class="section-header">Client &amp; Event</div>
+        <div class="group">
+          <div class="row">
+            <div class="row-icon icon-brown">👤</div>
+            <div class="row-label">
+              <input class="inline-full" id="clientName" type="text" placeholder="Client Name" oninput="updateQuote()" autocomplete="off"/>
+            </div>
+          </div>
+          <div class="row">
+            <div class="row-icon icon-brown">🎉</div>
+            <div class="row-label">
+              <input class="inline-full" id="eventName" type="text" placeholder="Event (Birthday, Wedding…)" oninput="updateQuote()" autocomplete="off"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Event Details -->
+      <div class="section">
+        <div class="section-header">Event Details</div>
+        <div class="group">
+
+          <div class="row">
+            <div class="row-icon icon-dark">📍</div>
+            <div class="row-label">
+              <div class="row-label-text">Event Zip Code</div>
+            </div>
+            <input class="inline inline-sm" id="eventZip" type="number" inputmode="numeric" placeholder="75001" oninput="onEventZip()" autocomplete="off"/>
+          </div>
+          <div class="zip-info" id="eventZipInfo" style="display:none"></div>
+
+          <div class="row">
+            <div class="row-icon icon-dark">💰</div>
+            <div class="row-label">
+              <div class="row-label-text">Tax Rate</div>
+              <div class="row-label-sub">Auto-filled · editable</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input class="inline inline-sm" id="taxRate" type="number" inputmode="decimal" value="8.25" step="0.01" onchange="updateQuote()" style="width:60px"/>
+              <span style="color:var(--text3);font-size:15px">%</span>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="row-icon icon-dark">⏱</div>
+            <div class="row-label">
+              <div class="row-label-text">Hours</div>
+              <div class="row-label-sub">1 hr minimum · +$150/hr</div>
+            </div>
+            <div class="stepper">
+              <button class="step-btn" onclick="changeHours(-1)">−</button>
+              <span class="step-val" id="hoursVal">1</span>
+              <button class="step-btn" onclick="changeHours(1)">+</button>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="row-icon icon-dark">👥</div>
+            <div class="row-label">
+              <div class="row-label-text">Guest Count</div>
+            </div>
+            <input class="inline" id="guestCount" type="number" inputmode="numeric" placeholder="e.g. 75" onchange="updateQuote()" style="width:80px"/>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Indoor / Outdoor -->
+      <div class="segment-wrap">
+        <div class="segment">
+          <div class="seg-opt active" id="segIndoor"  onclick="setLoc('indoor')">🏠 Indoor</div>
+          <div class="seg-opt"        id="segOutdoor" onclick="setLoc('outdoor')">☀️ Outdoor</div>
+        </div>
+      </div>
+
+      <!-- Add-ons -->
+      <div class="section">
+        <div class="section-header">Add-ons</div>
+        <div class="group">
+
+          <!-- Power Supply (non-taxable) -->
+          <div class="row">
+            <div class="row-icon icon-stone">⚡</div>
+            <div class="row-label">
+              <div class="row-label-text">Power Supply</div>
+              <div class="row-label-sub">External generator · non-taxable</div>
+            </div>
+            <span class="price-tag" style="margin-right:10px">$300</span>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkPower" onchange="updateQuote()"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <!-- Alt Milk -->
+          <div class="row">
+            <div class="row-icon icon-stone">🥛</div>
+            <div class="row-label">
+              <div class="row-label-text">Alternative Milk</div>
+              <div class="row-label-sub">Oat, Almond, Coconut…</div>
+            </div>
+            <input class="inline inline-sm" id="priceMilk" type="number" inputmode="decimal" placeholder="$0" min="0" step="0.01" onchange="updateQuote()" style="display:none"/>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkMilk" onchange="togglePriceField('milk'); updateQuote();"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <!-- Stickers -->
+          <div class="row">
+            <div class="row-icon icon-stone">🏷</div>
+            <div class="row-label">
+              <div class="row-label-text">Custom Stickers</div>
+              <div class="row-label-sub">Paste Sticker Lab price</div>
+            </div>
+            <input class="inline inline-sm" id="priceStickers" type="number" inputmode="decimal" placeholder="$0" min="0" step="0.01" onchange="updateQuote()" style="display:none"/>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkStickers" onchange="togglePriceField('stickers'); updateQuote();"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <!-- Alt Syrups -->
+          <div class="row">
+            <div class="row-icon icon-stone">🍯</div>
+            <div class="row-label">
+              <div class="row-label-text">Alt Syrups</div>
+              <div class="row-label-sub" id="syrupSub">$15 per syrup</div>
+            </div>
+            <div id="syrupCtr" style="display:none;margin-right:10px" class="stepper">
+              <button class="step-btn" onclick="changeCnt('syrups',-1)">−</button>
+              <span class="step-val" id="valSyrups">1</span>
+              <button class="step-btn" onclick="changeCnt('syrups',1)">+</button>
+            </div>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkSyrups" onchange="toggleCounter('syrups'); updateQuote();"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <!-- Alt Sauces -->
+          <div class="row">
+            <div class="row-icon icon-stone">🫙</div>
+            <div class="row-label">
+              <div class="row-label-text">Alt Sauces</div>
+              <div class="row-label-sub" id="sauceSub">$9 per sauce</div>
+            </div>
+            <div id="sauceCtr" style="display:none;margin-right:10px" class="stepper">
+              <button class="step-btn" onclick="changeCnt('sauces',-1)">−</button>
+              <span class="step-val" id="valSauces">1</span>
+              <button class="step-btn" onclick="changeCnt('sauces',1)">+</button>
+            </div>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkSauces" onchange="toggleCounter('sauces'); updateQuote();"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <!-- Hot Chocolate -->
+          <div class="row">
+            <div class="row-icon icon-stone">🍫</div>
+            <div class="row-label">
+              <div class="row-label-text">Hot Chocolate</div>
+            </div>
+            <input class="inline inline-sm" id="priceHotChoc" type="number" inputmode="decimal" placeholder="$0" min="0" step="0.01" onchange="updateQuote()" style="display:none"/>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkHotChoc" onchange="togglePriceField('hotchoc'); updateQuote();"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
+          <!-- Cold Foam -->
+          <div class="row">
+            <div class="row-icon icon-stone">☁️</div>
+            <div class="row-label">
+              <div class="row-label-text">Cold Foam / Whipped Cream</div>
+            </div>
+            <input class="inline inline-sm" id="priceColdFoam" type="number" inputmode="decimal" placeholder="$0" min="0" step="0.01" onchange="updateQuote()" style="display:none"/>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkColdFoam" onchange="togglePriceField('coldfoam'); updateQuote();"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- Actions -->
+      <div class="section">
+        <div class="group">
+          <div class="row" style="cursor:pointer;padding:0;" onclick="goTab('quote')">
+            <button class="action-btn btn-warm" style="border-radius:14px;margin:0;font-size:16px;">
+              📊 Generate Quote
+            </button>
+          </div>
+          <div class="row" style="cursor:pointer;padding:0;" onclick="resetAll()">
+            <button class="action-btn btn-danger" style="border-radius:0;margin:0;font-size:16px;font-weight:500;">
+              ↺ Reset Form
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+    </div><!-- /pageForm -->
+
+    <!-- ══ PAGE: QUOTE ══ -->
+    <div class="page" id="pageQuote">
+      <div id="quoteContent">
+        <div class="empty-state">
+          <div class="empty-icon">☕</div>
+          Fill in event details on the<br>Form tab to see your quote.
+        </div>
+      </div>
+      <div class="action-group" id="quoteActions" style="display:none">
+        <button class="action-btn btn-secondary" onclick="copyQuote()" id="btnCopy">📋 Copy Quote to Clipboard</button>
+        <button class="action-btn btn-secondary" onclick="shareQuote()">↑ Share</button>
+        <button class="action-btn btn-danger" onclick="resetAll()">↺ New Quote</button>
+      </div>
+      <div style="height:20px"></div>
+    </div><!-- /pageQuote -->
+
+    <!-- ══ PAGE: SETTINGS ══ -->
+    <div class="page" id="pageSettings">
+
+      <!-- Home Base -->
+      <div class="section">
+        <div class="section-header">Home Base</div>
+        <div class="group">
+          <div class="row">
+            <div class="row-icon icon-brown">🏠</div>
+            <div class="row-label">
+              <div class="row-label-text">Your Zip Code</div>
+            </div>
+            <input class="inline inline-sm" id="homeZip" type="number" inputmode="numeric" placeholder="75001" oninput="onHomeZip()" autocomplete="off"/>
+          </div>
+          <div class="zip-info" id="homeZipInfo" style="display:none"></div>
+
+          <div class="row">
+            <div class="row-icon icon-brown">☀️</div>
+            <div class="row-label">
+              <div class="row-label-text">Outdoor Upcharge</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:4px">
+              <input class="inline" id="outdoorPct" type="number" inputmode="decimal" value="10" min="0" max="100" onchange="save(); updateQuote();" style="width:55px"/>
+              <span style="color:var(--text3);font-size:15px">%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Guest Tiers -->
+      <div class="section">
+        <div class="section-header">Guest Pricing Tiers</div>
+        <p class="settings-note">Set a base price per guest range. The matching tier is used for the quote.</p>
+        <div class="group" style="margin-top:8px">
+          <div id="guestTiersBody"></div>
+          <button class="add-row-btn" onclick="addGuestTier()">＋ Add Tier</button>
+        </div>
+      </div>
+
+      <!-- Travel Tiers -->
+      <div class="section">
+        <div class="section-header">Travel Fee Tiers</div>
+        <p class="settings-note">Auto-calculated from your home zip to the event zip (straight-line × 1.25).</p>
+        <div class="group" style="margin-top:8px">
+          <div id="travelTiersBody"></div>
+          <button class="add-row-btn" onclick="addTravelTier()">＋ Add Tier</button>
+        </div>
+      </div>
+
+      <div style="height:20px"></div>
+    </div><!-- /pageSettings -->
+
+  </div><!-- /pages -->
+
+  <!-- TAB BAR -->
+  <div class="tabbar">
+    <div class="tab active" id="tabForm" onclick="goTab('form')">
+      <div class="tab-icon">📝</div>
+      <div class="tab-label">Form</div>
+    </div>
+    <div class="tab" id="tabQuote" onclick="goTab('quote')">
+      <div class="tab-icon">📊</div>
+      <div class="tab-label">Quote</div>
+    </div>
+    <div class="tab" id="tabSettings" onclick="goTab('settings')">
+      <div class="tab-icon">⚙️</div>
+      <div class="tab-label">Settings</div>
+    </div>
+  </div>
+
+</div><!-- /app -->
+
+<script>
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+let hours = 1;
+let isIndoor = true;
+const counts = { syrups: 1, sauces: 1 };
+let homeCoords = null;
+let eventCoords = null;
+let eventCountyName = null;
+
+const S = {
+  guestTiers: [
+    { guests: 50,   price: 500  },
+    { guests: 100,  price: 700  },
+    { guests: 150,  price: 900  },
+    { guests: 200,  price: 1100 },
+    { guests: 9999, price: 1300 },
+  ],
+  travelTiers: [
+    { miles: 10,   fee: 0   },
+    { miles: 25,   fee: 50  },
+    { miles: 50,   fee: 100 },
+    { miles: 75,   fee: 175 },
+    { miles: 9999, fee: 250 },
+  ],
+};
+
+// State-level tax fallbacks
+const ST = {
+  AL:4,AK:0,AZ:5.6,AR:6.5,CA:7.25,CO:2.9,CT:6.35,DE:0,FL:6,GA:4,HI:4,
+  ID:6,IL:6.25,IN:7,IA:6,KS:6.5,KY:6,LA:4.45,ME:5.5,MD:6,MA:6.25,MI:6,
+  MN:6.875,MS:7,MO:4.23,MT:0,NE:5.5,NV:6.85,NH:0,NJ:6.63,NM:5.13,NY:4,
+  NC:4.75,ND:5,OH:5.75,OK:4.5,OR:0,PA:6,RI:7,SC:6,SD:4.5,TN:7,TX:8.25,
+  UT:5.95,VT:6,VA:5.3,WA:10.25,WV:6,WI:5,WY:4,DC:6
+};
+
+// Georgia county FIPS → tax rate (GA Dept of Revenue, effective April 1, 2026)
+const CR = {
+  '13001':8.00,'13003':8.00,'13005':8.00,'13007':8.00,'13009':8.00,
+  '13011':9.00,'13013':8.00,'13015':7.00,'13017':8.00,'13019':9.00,
+  '13021':8.00,'13023':8.00,'13025':8.00,'13027':8.00,'13029':9.00,
+  '13031':9.00,'13033':7.00,'13035':8.00,'13037':8.00,'13039':7.00,
+  '13041':9.00,'13043':7.00,'13045':7.00,'13047':7.00,'13049':7.00,
+  '13051':9.00,'13053':9.00,'13055':7.00,'13057':8.00,'13059':9.00,
+  '13061':8.00,'13063':8.00,'13065':6.00,'13067':8.00,'13069':9.00,
+  '13071':8.00,'13073':9.00,'13075':8.00,'13077':8.00,'13079':8.00,
+  '13081':7.00,'13083':8.00,'13085':9.00,'13087':8.00,'13089':8.00,
+  '13091':8.00,'13093':8.00,'13095':7.00,'13097':8.00,'13099':8.00,
+  '13101':8.00,'13103':9.00,'13105':9.00,'13107':9.00,'13109':7.00,
+  '13111':7.00,'13113':7.00,'13115':7.00,'13117':7.00,'13119':7.75,
+  '13121':7.00,'13123':8.00,'13125':7.00,'13127':8.00,'13129':8.00,
+  '13131':8.00,'13133':6.00,'13135':7.00,'13137':7.00,'13139':8.00,
+  '13141':8.00,'13143':8.00,'13145':7.00,'13147':7.00,'13149':8.00,
+  '13151':7.00,'13153':8.00,'13155':8.00,'13157':8.00,'13159':8.00,
+  '13161':9.00,'13163':8.00,'13165':8.00,'13167':7.00,'13169':9.00,
+  '13171':8.00,'13173':8.00,'13175':8.00,'13177':9.00,'13179':9.00,
+  '13181':9.00,'13183':8.00,'13185':8.00,'13187':9.00,'13189':8.00,
+  '13191':8.00,'13193':8.00,'13195':8.00,'13197':8.00,'13199':9.00,
+  '13201':8.00,'13203':8.00,'13205':8.00,'13207':8.00,'13209':9.00,
+  '13211':9.00,'13213':7.00,'13215':8.00,'13217':9.00,'13219':7.00,
+  '13221':9.00,'13223':7.00,'13225':8.00,'13227':7.00,'13229':7.00,
+  '13231':8.00,'13233':8.00,'13235':8.00,'13237':8.00,'13239':8.00,
+  '13241':8.50,'13243':7.00,'13245':9.00,'13247':8.00,'13249':8.00,
+  '13251':7.00,'13253':7.00,'13255':8.00,'13257':8.00,'13259':8.00,
+  '13261':8.00,'13263':8.00,'13265':8.00,'13267':8.00,'13269':8.00,
+  '13271':8.00,'13273':8.00,'13275':8.00,'13277':8.00,'13279':8.00,
+  '13281':7.00,'13283':9.00,'13285':8.00,'13287':7.00,'13289':9.00,
+  '13291':8.00,'13293':7.00,'13295':8.00,'13297':9.00,'13299':9.00,
+  '13301':8.00,'13303':8.00,'13305':8.00,'13307':8.00,'13309':7.00,
+  '13311':8.00,'13313':9.00,'13315':7.00,'13317':8.00,
+};
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', () => {
+  const raw = localStorage.getItem('sukoon_ios_v1');
+  if (raw) {
+    try {
+      const saved = JSON.parse(raw);
+      if (saved.homeZip) { $('homeZip').value = saved.homeZip; doZipLookup(saved.homeZip, 'home'); }
+      if (saved.outdoorPct !== undefined) $('outdoorPct').value = saved.outdoorPct;
+      if (saved.guestTiers)  S.guestTiers  = saved.guestTiers;
+      if (saved.travelTiers) S.travelTiers = saved.travelTiers;
+    } catch(e) {}
+  }
+  renderGuestTiers();
+  renderTravelTiers();
+  updateQuote();
+});
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+const $ = id => document.getElementById(id);
+const num = id => parseFloat($(id).value) || 0;
+const int = id => parseInt($(id).value) || 0;
+
+function save() {
+  localStorage.setItem('sukoon_ios_v1', JSON.stringify({
+    homeZip:    $('homeZip').value,
+    outdoorPct: num('outdoorPct'),
+    guestTiers:  S.guestTiers,
+    travelTiers: S.travelTiers,
+  }));
+}
+
+// ═══════════════════════════════════════════════
+// TABS
+// ═══════════════════════════════════════════════
+let curTab = 'form';
+const tabTitles = { form: 'New Quote', quote: 'Quote', settings: 'Settings' };
+
+function goTab(t) {
+  curTab = t;
+  ['form','quote','settings'].forEach(id => {
+    $('page' + id[0].toUpperCase() + id.slice(1)).classList.toggle('active', id === t);
+    $('tab'  + id[0].toUpperCase() + id.slice(1)).classList.toggle('active', id === t);
+  });
+  $('topTitle').textContent = tabTitles[t] || '';
+  $('topAction').textContent = t === 'form' ? '⚙' : '';
+  $('topAction').style.visibility = t === 'settings' ? 'hidden' : 'visible';
+}
+
+function handleTopAction() {
+  if (curTab === 'form') goTab('settings');
+}
+
+// ═══════════════════════════════════════════════
+// LOCATION
+// ═══════════════════════════════════════════════
+function setLoc(t) {
+  isIndoor = t === 'indoor';
+  $('segIndoor').classList.toggle('active',  isIndoor);
+  $('segOutdoor').classList.toggle('active', !isIndoor);
+  updateQuote();
+}
+
+// ═══════════════════════════════════════════════
+// HOURS / COUNTERS
+// ═══════════════════════════════════════════════
+function changeHours(d) {
+  hours = Math.max(1, hours + d);
+  $('hoursVal').textContent = hours;
+  updateQuote();
+}
+
+function changeCnt(key, d) {
+  counts[key] = Math.max(1, (counts[key] || 1) + d);
+  $('val' + key[0].toUpperCase() + key.slice(1)).textContent = counts[key];
+  const rates = { syrups: 15, sauces: 9 };
+  const sub = key === 'syrups' ? 'syrupSub' : 'sauceSub';
+  $(sub).textContent = `${counts[key]} × $${rates[key]} = $${counts[key] * rates[key]}`;
+  updateQuote();
+}
+
+// ═══════════════════════════════════════════════
+// ADD-ON TOGGLES
+// ═══════════════════════════════════════════════
+const PRICE_FIELDS = {
+  milk: 'priceMilk', stickers: 'priceStickers',
+  hotchoc: 'priceHotChoc', coldfoam: 'priceColdFoam'
+};
+const CHECK_IDS = {
+  milk: 'chkMilk', stickers: 'chkStickers',
+  hotchoc: 'chkHotChoc', coldfoam: 'chkColdFoam'
+};
+
+function togglePriceField(key) {
+  const on = $(CHECK_IDS[key]).checked;
+  const el = $(PRICE_FIELDS[key]);
+  el.style.display = on ? 'block' : 'none';
+  if (!on) el.value = '';
+}
+
+function toggleCounter(key) {
+  const on = $('chk' + key[0].toUpperCase() + key.slice(1)).checked;
+  $(key === 'syrups' ? 'syrupCtr' : 'sauceCtr').style.display = on ? 'flex' : 'none';
+}
+
+// ═══════════════════════════════════════════════
+// ZIP LOOKUP
+// ═══════════════════════════════════════════════
+let _zt = {};
+
+function onHomeZip() {
+  const z = $('homeZip').value.trim();
+  if (z.length >= 5) { clearTimeout(_zt.h); _zt.h = setTimeout(() => doZipLookup(z, 'home'), 600); }
+  else { homeCoords = null; hideZipInfo('home'); }
+}
+
+function onEventZip() {
+  const z = $('eventZip').value.trim();
+  eventCountyName = null;
+  if (z.length >= 5) { clearTimeout(_zt.e); _zt.e = setTimeout(() => doZipLookup(z, 'event'), 600); }
+  else { eventCoords = null; hideZipInfo('event'); updateQuote(); }
+}
+
+function hideZipInfo(t) {
+  const el = $(t === 'home' ? 'homeZipInfo' : 'eventZipInfo');
+  el.style.display = 'none';
+}
+
+async function doZipLookup(zip, type) {
+  const el = $(type === 'home' ? 'homeZipInfo' : 'eventZipInfo');
+  el.textContent = ''; el.className = 'zip-info loading'; el.style.display = 'block';
+  el.innerHTML = '<span class="spin"></span> Looking up…';
+  try {
+    const r = await fetch(`https://api.zippopotam.us/us/${zip.toString().padStart(5,'0')}`);
+    if (!r.ok) throw new Error('not found');
+    const d = await r.json();
+    const p = d.places[0];
+    const coords = { lat: +p.latitude, lon: +p.longitude, city: p['place name'], state: p['state abbreviation'] };
+
+    if (type === 'home') {
+      homeCoords = coords;
+      el.className = 'zip-info';
+      el.textContent = `📍 ${coords.city}, ${coords.state}`;
+      save();
+    } else {
+      eventCoords = coords;
+      el.className = 'zip-info';
+      el.innerHTML = `📍 ${coords.city}, ${coords.state}`;
+      // Apply state-level rate immediately
+      const stateRate = ST[coords.state];
+      if (stateRate !== undefined) $('taxRate').value = stateRate.toFixed(2);
+      updateQuote();
+
+      // Chain county lookup (Census Bureau Geocoder — free, no API key)
+      try {
+        const county = await lookupCounty(coords.lat, coords.lon);
+        if (county) {
+          eventCountyName = county.name;
+          el.innerHTML = `📍 ${coords.city}, ${coords.state}<span class="zip-county">${county.name} County</span>`;
+          const countyRate = CR[county.fips];
+          if (countyRate !== undefined) {
+            $('taxRate').value = countyRate.toFixed(2);
+            updateQuote();
+          }
+        }
+      } catch(e) { /* county lookup failed, keep state rate */ }
+    }
+    updateQuote();
+  } catch(e) {
+    el.className = 'zip-info err';
+    el.textContent = 'Zip not found';
+    if (type === 'home') homeCoords = null;
+    else { eventCoords = null; eventCountyName = null; }
+    updateQuote();
+  }
+}
+
+async function lookupCounty(lat, lon) {
+  const url = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lon}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Vintage&layers=Counties&format=json`;
+  const r = await fetch(url);
+  const d = await r.json();
+  const counties = d?.result?.geographies?.Counties;
+  if (!counties || !counties.length) return null;
+  const c = counties[0];
+  return { name: c.NAME, fips: c.STATE + c.COUNTY };
+}
+
+// ═══════════════════════════════════════════════
+// TIERS
+// ═══════════════════════════════════════════════
+function renderGuestTiers() {
+  const el = $('guestTiersBody');
+  el.innerHTML = '';
+  S.guestTiers.forEach((t, i) => {
+    const last = i === S.guestTiers.length - 1;
+    const div = document.createElement('div');
+    div.className = 'tier-row';
+    div.innerHTML = `
+      <span class="tier-label">${last ? '∞ guests' : 'Up to'}</span>
+      ${!last ? `<input class="tier-input" type="number" inputmode="numeric" value="${t.guests}" placeholder="guests" onchange="S.guestTiers[${i}].guests=+this.value; save(); updateQuote();" style="max-width:80px"/>` : '<span style="flex:1"></span>'}
+      <input class="tier-input" type="number" inputmode="decimal" value="${t.price}" placeholder="$" onchange="S.guestTiers[${i}].price=+this.value; save(); updateQuote();" style="max-width:90px"/>
+      <button class="tier-del" onclick="removeGuestTier(${i})">×</button>`;
+    el.appendChild(div);
+  });
+}
+function addGuestTier() {
+  const last = S.guestTiers[S.guestTiers.length - 1];
+  S.guestTiers[S.guestTiers.length - 1].guests = last.guests === 9999 ? 250 : last.guests + 50;
+  S.guestTiers.push({ guests: 9999, price: last.price + 200 });
+  renderGuestTiers(); save();
+}
+function removeGuestTier(i) {
+  if (S.guestTiers.length <= 1) return;
+  S.guestTiers.splice(i, 1);
+  S.guestTiers[S.guestTiers.length - 1].guests = 9999;
+  renderGuestTiers(); save(); updateQuote();
+}
+
+function renderTravelTiers() {
+  const el = $('travelTiersBody');
+  el.innerHTML = '';
+  S.travelTiers.forEach((t, i) => {
+    const last = i === S.travelTiers.length - 1;
+    const div = document.createElement('div');
+    div.className = 'tier-row';
+    div.innerHTML = `
+      <span class="tier-label">${last ? '∞ miles' : 'Up to'}</span>
+      ${!last ? `<input class="tier-input" type="number" inputmode="numeric" value="${t.miles}" placeholder="miles" onchange="S.travelTiers[${i}].miles=+this.value; save(); updateQuote();" style="max-width:80px"/>` : '<span style="flex:1"></span>'}
+      <input class="tier-input" type="number" inputmode="decimal" value="${t.fee}" placeholder="$" onchange="S.travelTiers[${i}].fee=+this.value; save(); updateQuote();" style="max-width:90px"/>
+      <button class="tier-del" onclick="removeTravelTier(${i})">×</button>`;
+    el.appendChild(div);
+  });
+}
+function addTravelTier() {
+  const last = S.travelTiers[S.travelTiers.length - 1];
+  S.travelTiers[S.travelTiers.length - 1].miles = last.miles === 9999 ? 100 : last.miles + 25;
+  S.travelTiers.push({ miles: 9999, fee: last.fee + 75 });
+  renderTravelTiers(); save();
+}
+function removeTravelTier(i) {
+  if (S.travelTiers.length <= 1) return;
+  S.travelTiers.splice(i, 1);
+  S.travelTiers[S.travelTiers.length - 1].miles = 9999;
+  renderTravelTiers(); save(); updateQuote();
+}
+
+// ═══════════════════════════════════════════════
+// MATH
+// ═══════════════════════════════════════════════
+function haversine(a, b, c, d) {
+  const R = 3958.8, r = Math.PI/180;
+  const dL = (c-a)*r, dG = (d-b)*r;
+  const x = Math.sin(dL/2)**2 + Math.cos(a*r)*Math.cos(c*r)*Math.sin(dG/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1-x));
+}
+function getBase(g) {
+  if (!g) return null;
+  const sorted = [...S.guestTiers].sort((a,b) => a.guests-b.guests);
+  for (const t of sorted) if (g <= t.guests) return t.price;
+  return sorted[sorted.length-1].price;
+}
+function getTravelFee(m) {
+  const sorted = [...S.travelTiers].sort((a,b) => a.miles-b.miles);
+  for (const t of sorted) if (m <= t.miles) return t.fee;
+  return sorted[sorted.length-1].fee;
+}
+
+// ═══════════════════════════════════════════════
+// COMPUTE — taxable vs non-taxable split
+// ═══════════════════════════════════════════════
+function compute() {
+  const guests    = int('guestCount');
+  const taxRate   = num('taxRate');
+  const outdoorP  = num('outdoorPct');
+  const basePrice = getBase(guests);
+  const extraHrs  = Math.max(0, hours - 1);
+  const extraCost = extraHrs * 150;
+  const outdoor   = (!isIndoor && basePrice) ? basePrice * outdoorP / 100 : 0;
+
+  let travel = 0, miles = null;
+  if (homeCoords && eventCoords) {
+    miles  = haversine(homeCoords.lat, homeCoords.lon, eventCoords.lat, eventCoords.lon) * 1.25;
+    travel = getTravelFee(miles);
+  }
+
+  // Taxable addons: food & beverage items
+  const addons = [];
+  if ($('chkMilk').checked)     addons.push({ lbl:'Alt Milk',                          amt: num('priceMilk') });
+  if ($('chkStickers').checked) addons.push({ lbl:'Custom Stickers',                   amt: num('priceStickers') });
+  if ($('chkSyrups').checked)   addons.push({ lbl:`Alt Syrups (${counts.syrups}×)`,   amt: counts.syrups * 15 });
+  if ($('chkSauces').checked)   addons.push({ lbl:`Alt Sauces (${counts.sauces}×)`,   amt: counts.sauces * 9 });
+  if ($('chkHotChoc').checked)  addons.push({ lbl:'Hot Chocolate',                     amt: num('priceHotChoc') });
+  if ($('chkColdFoam').checked) addons.push({ lbl:'Cold Foam / Whipped Cream',         amt: num('priceColdFoam') });
+
+  // Non-taxable addons: equipment / fees
+  const nonTaxableAddons = [];
+  if ($('chkPower').checked) nonTaxableAddons.push({ lbl:'Power Supply', amt: 300 });
+
+  const taxableSubtotal    = (basePrice||0) + extraCost + outdoor + addons.reduce((s,a) => s+a.amt, 0);
+  const nonTaxableAddonAmt = nonTaxableAddons.reduce((s,a) => s+a.amt, 0);
+  const taxAmt             = taxableSubtotal * taxRate / 100;
+  const total              = taxableSubtotal + nonTaxableAddonAmt + travel + taxAmt;
+
+  return {
+    guests, hours, basePrice, extraHrs, extraCost, outdoor, outdoorP,
+    travel, miles, addons, nonTaxableAddons,
+    taxableSubtotal, nonTaxableAddonAmt, taxRate, taxAmt, total,
+  };
+}
+
+// ═══════════════════════════════════════════════
+// RENDER QUOTE
+// ═══════════════════════════════════════════════
+function updateQuote() {
+  const q        = compute();
+  const client   = $('clientName').value.trim();
+  const event    = $('eventName').value.trim();
+  const hasQuote = q.guests > 0 && q.basePrice !== null;
+  const content  = $('quoteContent');
+  const actions  = $('quoteActions');
+
+  actions.style.display = hasQuote ? 'flex' : 'none';
+
+  if (!hasQuote) {
+    content.innerHTML = `<div class="empty-state"><div class="empty-icon">☕</div>Fill in event details on the<br>Form tab to see your quote.</div>`;
+    return;
+  }
+
+  const fmt = v => '$' + v.toFixed(2);
+  const qr = (lbl, amt, sub=false, bold=false) =>
+    `<div class="q-row${sub?' sub':''}">
+       <span class="q-label${bold?' q-bold':''}">${lbl}</span>
+       <span class="q-amount${bold?' white':''}">${fmt(amt)}</span>
+     </div>`;
+
+  const clientLine = [client, event].filter(Boolean).join(' · ');
+  let h = `
+    <div class="quote-hero">
+      <div class="quote-hero-brand">Sukoon Coffee Co.</div>
+      <div class="quote-hero-sub">Specialty Live Mobile Coffee Cart · @SukoonCoffeeCo</div>
+      ${clientLine ? `<div class="quote-hero-client">${clientLine}</div>` : ''}
+      <div style="border-top:.5px solid rgba(255,255,255,.15);margin:14px 0 10px"></div>
+      <div class="quote-total-label">Estimated Total</div>
+      <div class="quote-total-amount">$${q.total.toFixed(2)}</div>
+    </div>`;
+
+  // ── Taxable Items ──
+  h += `<div class="q-sec-header">Taxable Items</div>`;
+  h += `<div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin:0 18px;">`;
+  h += qr(`Base Package · ${q.guests} guests · ${q.hours}h`, q.basePrice, false, true);
+  if (q.extraHrs > 0) h += qr(`Add'l Hours (${q.extraHrs} × $150)`, q.extraCost, true);
+  if (q.outdoor  > 0) h += qr(`Outdoor Upcharge (+${q.outdoorP}%)`, q.outdoor, true);
+  q.addons.forEach(a => h += qr(a.lbl, a.amt, true));
+  h += `</div>`;
+
+  // ── Non-Taxable Items ──
+  const hasNonTax = q.nonTaxableAddons.length > 0 || q.travel > 0;
+  if (hasNonTax) {
+    h += `<div class="q-sec-header">Non-Taxable Items</div>`;
+    h += `<div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin:0 18px;">`;
+    q.nonTaxableAddons.forEach(a => h += qr(a.lbl, a.amt, true));
+    if (q.miles !== null) h += qr(`Travel Fee (${Math.round(q.miles)} mi)`, q.travel, true);
+    h += `</div>`;
+  }
+
+  // ── Totals ──
+  h += `<div class="q-sec-header">Totals</div>`;
+  h += `<div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin:0 18px;">`;
+  h += qr('Taxable Subtotal', q.taxableSubtotal);
+  if (q.taxRate > 0) h += qr(`Tax (${q.taxRate}%)`, q.taxAmt, true);
+  if (hasNonTax) {
+    const nonTaxTotal = q.nonTaxableAddonAmt + q.travel;
+    h += qr('Non-Taxable Items', nonTaxTotal, true);
+  }
+  h += `<div class="q-row">
+    <span class="q-label q-bold">Total</span>
+    <span class="q-amount white">$${q.total.toFixed(2)}</span>
+  </div>`;
+  h += `</div>`;
+
+  content.innerHTML = h;
+}
+
+// ═══════════════════════════════════════════════
+// COPY / SHARE
+// ═══════════════════════════════════════════════
+function buildText() {
+  const q      = compute();
+  const client = $('clientName').value.trim();
+  const event  = $('eventName').value.trim();
+  const zip    = $('eventZip').value.trim();
+  const city   = eventCoords ? ` · ${eventCoords.city}, ${eventCoords.state}` : '';
+  const fmt    = v => '$' + v.toFixed(2);
+  const pad    = (s, n=32) => s.padEnd(n);
+
+  const lines = [
+    '════════════════════════════════════',
+    '   SUKOON COFFEE CO.',
+    '   Specialty Live Mobile Coffee Cart',
+    '   @SukoonCoffeeCo',
+    '════════════════════════════════════',
+    '',
+  ];
+  if (client)  lines.push(`Client : ${client}`);
+  if (event)   lines.push(`Event  : ${event}`);
+  if (zip)     lines.push(`Zip    : ${zip}${city}`);
+  lines.push(`Type   : ${isIndoor ? 'Indoor' : 'Outdoor'}`);
+  lines.push(`Hours  : ${q.hours}  |  Guests: ${q.guests}`);
+  lines.push('', 'BREAKDOWN', '────────────────────────────────────');
+  lines.push(`${pad('Base Package')} ${fmt(q.basePrice||0)}`);
+  if (q.extraHrs > 0) lines.push(`${pad(`Add'l Hours (${q.extraHrs}×$150)`)} ${fmt(q.extraCost)}`);
+  if (q.outdoor  > 0) lines.push(`${pad(`Outdoor (+${q.outdoorP}%)`)} ${fmt(q.outdoor)}`);
+  q.addons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
+  lines.push('────────────────────────────────────');
+  lines.push(`${pad('Taxable Subtotal')} ${fmt(q.taxableSubtotal)}`);
+  if (q.taxRate > 0) lines.push(`${pad(`Tax (${q.taxRate}%)`)} ${fmt(q.taxAmt)}`);
+
+  const hasNonTax = q.nonTaxableAddons.length > 0 || q.miles !== null;
+  if (hasNonTax) {
+    lines.push('', 'NON-TAXABLE');
+    q.nonTaxableAddons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
+    if (q.miles !== null) lines.push(`${pad(`Travel (${Math.round(q.miles)} mi)`)} ${fmt(q.travel)}`);
+  }
+
+  lines.push('════════════════════════════════════');
+  lines.push(`${pad('TOTAL')} ${fmt(q.total)}`);
+  lines.push('════════════════════════════════════');
+
+  return lines.join('\n');
+}
+
+function copyQuote() {
+  const text = buildText();
+  const btn = $('btnCopy');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => {
+      btn.textContent = '✓ Copied!';
+      btn.style.color = 'var(--green)';
+      setTimeout(() => { btn.textContent = '📋 Copy Quote to Clipboard'; btn.style.color = ''; }, 2000);
+    });
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    btn.textContent = '✓ Copied!';
+    setTimeout(() => { btn.textContent = '📋 Copy Quote to Clipboard'; }, 2000);
+  }
+}
+
+function shareQuote() {
+  const text = buildText();
+  if (navigator.share) {
+    navigator.share({ title: 'Sukoon Coffee Co. Quote', text });
+  } else {
+    copyQuote();
+  }
+}
+
+// ═══════════════════════════════════════════════
+// RESET
+// ═══════════════════════════════════════════════
+function resetAll() {
+  if (!confirm('Reset all form fields and start a new quote?')) return;
+  ['clientName','eventName','eventZip','guestCount'].forEach(id => $(id).value = '');
+  hours = 1; $('hoursVal').textContent = 1;
+  isIndoor = true;
+  $('segIndoor').classList.add('active');
+  $('segOutdoor').classList.remove('active');
+  eventCoords = null;
+  eventCountyName = null;
+  $('eventZipInfo').style.display = 'none';
+  $('taxRate').value = 8.25;
+  ['chkPower','chkMilk','chkStickers','chkSyrups','chkSauces','chkHotChoc','chkColdFoam']
+    .forEach(id => $(id).checked = false);
+  ['priceMilk','priceStickers','priceHotChoc','priceColdFoam']
+    .forEach(id => { $(id).style.display='none'; $(id).value=''; });
+  $('syrupCtr').style.display = 'none';
+  $('sauceCtr').style.display = 'none';
+  counts.syrups = 1; counts.sauces = 1;
+  $('valSyrups').textContent = 1; $('valSauces').textContent = 1;
+  $('syrupSub').textContent = '$15 per syrup';
+  $('sauceSub').textContent = '$9 per sauce';
+  updateQuote();
+  goTab('form');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+<!DOCTYPE html><html><body>
+<canvas id="c" width="512" height="512"></canvas>
+<script>
+const c = document.getElementById('c');
+const ctx = c.getContext('2d');
+// Background
+const grad = ctx.createLinearGradient(0,0,512,512);
+grad.addColorStop(0, '#1e0d07');
+grad.addColorStop(1, '#110704');
+ctx.fillStyle = grad;
+ctx.roundRect(0, 0, 512, 512, 80);
+ctx.fill();
+// Text
+ctx.fillStyle = '#ffffff';
+ctx.font = 'italic 160px Georgia, serif';
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+ctx.fillText('S', 256, 256);
+// Download
+const a = document.createElement('a');
+a.download = 'icon.png';
+a.href = c.toDataURL('image/png');
+a.textContent = 'Download icon.png';
+document.body.appendChild(a);
+</script>
+</body></html>

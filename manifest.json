@@ -1,0 +1,14 @@
+{
+  "name": "Sukoon Estimator",
+  "short_name": "Sukoon",
+  "description": "Sukoon Coffee Co. Quote Estimator",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#110704",
+  "theme_color": "#110704",
+  "orientation": "portrait",
+  "icons": [
+    { "src": "icon.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
