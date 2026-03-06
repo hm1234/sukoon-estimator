@@ -424,6 +424,73 @@
 
     /* ══ CHEVRON ══ */
     .chevron { color:var(--text3); font-size:13px; flex-shrink:0; }
+
+    /* ══ SYNC PANEL ══ */
+    .sync-panel {
+      display: none;
+      padding: 16px;
+      border-top: .5px solid var(--sep);
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .sync-panel.open { display: flex; }
+    .sync-qr {
+      width: 180px; height: 180px;
+      border-radius: 12px;
+      background: #fff;
+      padding: 8px;
+    }
+    .sync-url {
+      font-size: 11px;
+      color: var(--text3);
+      word-break: break-all;
+      text-align: center;
+      line-height: 1.4;
+      padding: 0 4px;
+    }
+    .sync-import-row {
+      display: none;
+      padding: 12px 16px;
+      border-top: .5px solid var(--sep);
+      gap: 8px;
+      align-items: center;
+    }
+    .sync-import-row.open { display: flex; }
+    .sync-import-input {
+      flex: 1;
+      background: rgba(255,255,255,.07);
+      border: none;
+      border-radius: 8px;
+      padding: 8px 10px;
+      color: var(--text);
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+    }
+    .sync-import-input::placeholder { color: var(--text3); }
+    .sync-import-input:focus { background: rgba(255,255,255,.12); }
+    .sync-apply-btn {
+      background: var(--green);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .sync-apply-btn:active { opacity: .7; }
+    .sync-msg {
+      font-size: 12px;
+      text-align: center;
+      padding: 0 16px 10px;
+      display: none;
+    }
+    .sync-msg.ok  { color: var(--green); display: block; }
+    .sync-msg.err { color: var(--red);   display: block; }
   </style>
 </head>
 <body>
@@ -715,6 +782,45 @@
         </div>
       </div>
 
+      <!-- Sync Settings -->
+      <div class="section">
+        <div class="section-header">Sync to Other Devices</div>
+        <p class="settings-note">Export a QR code or link — open it on any device to load your settings instantly.</p>
+        <div class="group" style="margin-top:8px">
+
+          <!-- Export row -->
+          <div class="row" onclick="toggleSyncExport()" style="cursor:pointer">
+            <div class="row-icon icon-brown">📤</div>
+            <div class="row-label">
+              <div class="row-label-text">Export Settings</div>
+              <div class="row-label-sub">QR code · shareable link</div>
+            </div>
+            <span class="chevron" id="syncExportChevron">›</span>
+          </div>
+          <div class="sync-panel" id="syncExportPanel">
+            <img class="sync-qr" id="syncQR" src="" alt="QR Code"/>
+            <div class="sync-url" id="syncURLText"></div>
+            <button class="action-btn btn-secondary" style="width:auto;padding:10px 20px;font-size:14px;" onclick="copySyncLink()">📋 Copy Link</button>
+          </div>
+
+          <!-- Import row -->
+          <div class="row" onclick="toggleSyncImport()" style="cursor:pointer">
+            <div class="row-icon icon-brown">📥</div>
+            <div class="row-label">
+              <div class="row-label-text">Import Settings</div>
+              <div class="row-label-sub">Paste a sync code from another device</div>
+            </div>
+            <span class="chevron" id="syncImportChevron">›</span>
+          </div>
+          <div class="sync-import-row" id="syncImportPanel">
+            <input class="sync-import-input" id="syncCodeInput" type="text" placeholder="Paste sync code here…" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+            <button class="sync-apply-btn" onclick="applyImportCode()">Apply</button>
+          </div>
+          <div class="sync-msg" id="syncMsg"></div>
+
+        </div>
+      </div>
+
       <div style="height:20px"></div>
     </div><!-- /pageSettings -->
 
@@ -815,15 +921,24 @@ const CR = {
 // INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('DOMContentLoaded', () => {
-  const raw = localStorage.getItem('sukoon_ios_v1');
-  if (raw) {
-    try {
-      const saved = JSON.parse(raw);
-      if (saved.homeZip) { $('homeZip').value = saved.homeZip; doZipLookup(saved.homeZip, 'home'); }
-      if (saved.outdoorPct !== undefined) $('outdoorPct').value = saved.outdoorPct;
-      if (saved.guestTiers)  S.guestTiers  = saved.guestTiers;
-      if (saved.travelTiers) S.travelTiers = saved.travelTiers;
-    } catch(e) {}
+  // Check for sync code in URL (?s=BASE64)
+  const params = new URLSearchParams(window.location.search);
+  const syncCode = params.get('s');
+  if (syncCode) {
+    applySettingsCode(syncCode, true);
+    // Remove param from URL so it doesn't linger
+    window.history.replaceState({}, '', window.location.pathname);
+  } else {
+    const raw = localStorage.getItem('sukoon_ios_v1');
+    if (raw) {
+      try {
+        const saved = JSON.parse(raw);
+        if (saved.homeZip) { $('homeZip').value = saved.homeZip; doZipLookup(saved.homeZip, 'home'); }
+        if (saved.outdoorPct !== undefined) $('outdoorPct').value = saved.outdoorPct;
+        if (saved.guestTiers)  S.guestTiers  = saved.guestTiers;
+        if (saved.travelTiers) S.travelTiers = saved.travelTiers;
+      } catch(e) {}
+    }
   }
   renderGuestTiers();
   renderTravelTiers();
@@ -1273,6 +1388,115 @@ function shareQuote() {
   } else {
     copyQuote();
   }
+}
+
+// ═══════════════════════════════════════════════
+// SETTINGS SYNC
+// ═══════════════════════════════════════════════
+function buildSyncCode() {
+  return btoa(JSON.stringify({
+    homeZip:    $('homeZip').value,
+    outdoorPct: num('outdoorPct'),
+    guestTiers:  S.guestTiers,
+    travelTiers: S.travelTiers,
+  }));
+}
+
+function buildSyncURL() {
+  const base = window.location.origin + window.location.pathname;
+  return `${base}?s=${buildSyncCode()}`;
+}
+
+function toggleSyncExport() {
+  const panel   = $('syncExportPanel');
+  const chevron = $('syncExportChevron');
+  const isOpen  = panel.classList.toggle('open');
+  chevron.textContent = isOpen ? '⌄' : '›';
+  if (isOpen) refreshSyncQR();
+  // Close import if open
+  $('syncImportPanel').classList.remove('open');
+  $('syncImportChevron').textContent = '›';
+}
+
+function refreshSyncQR() {
+  const url = buildSyncURL();
+  const qrSrc = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&color=110704&bgcolor=ffffff&data=${encodeURIComponent(url)}`;
+  $('syncQR').src = qrSrc;
+  $('syncURLText').textContent = url.length > 120 ? url.slice(0, 117) + '…' : url;
+}
+
+function copySyncLink() {
+  const url = buildSyncURL();
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(url).then(() => showSyncMsg('✓ Link copied! Open it on any device.', 'ok'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = url;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showSyncMsg('✓ Link copied!', 'ok');
+  }
+}
+
+function toggleSyncImport() {
+  const panel   = $('syncImportPanel');
+  const chevron = $('syncImportChevron');
+  const isOpen  = panel.classList.toggle('open');
+  chevron.textContent = isOpen ? '⌄' : '›';
+  // Close export if open
+  $('syncExportPanel').classList.remove('open');
+  $('syncExportChevron').textContent = '›';
+  $('syncMsg').className = 'sync-msg';
+  if (isOpen) setTimeout(() => $('syncCodeInput').focus(), 100);
+}
+
+function applyImportCode() {
+  const raw = $('syncCodeInput').value.trim();
+  // Accept full URL or raw base64 code
+  let code = raw;
+  try {
+    const u = new URL(raw);
+    code = u.searchParams.get('s') || raw;
+  } catch(e) { /* not a URL, treat as raw code */ }
+  const ok = applySettingsCode(code, false);
+  if (ok) {
+    showSyncMsg('✓ Settings applied!', 'ok');
+    $('syncCodeInput').value = '';
+    $('syncImportPanel').classList.remove('open');
+    $('syncImportChevron').textContent = '›';
+  } else {
+    showSyncMsg('✗ Invalid code — try again.', 'err');
+  }
+}
+
+function applySettingsCode(code, silent) {
+  try {
+    const data = JSON.parse(atob(code));
+    if (data.homeZip) {
+      $('homeZip').value = data.homeZip;
+      doZipLookup(data.homeZip, 'home');
+    }
+    if (data.outdoorPct !== undefined) $('outdoorPct').value = data.outdoorPct;
+    if (data.guestTiers)  S.guestTiers  = data.guestTiers;
+    if (data.travelTiers) S.travelTiers = data.travelTiers;
+    save();
+    renderGuestTiers();
+    renderTravelTiers();
+    updateQuote();
+    if (!silent) return true;
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+
+function showSyncMsg(msg, type) {
+  const el = $('syncMsg');
+  el.textContent = msg;
+  el.className = 'sync-msg ' + type;
+  setTimeout(() => { el.className = 'sync-msg'; }, 3000);
 }
 
 // ═══════════════════════════════════════════════
