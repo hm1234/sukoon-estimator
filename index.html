@@ -559,7 +559,7 @@
             <div class="row-icon icon-dark">⏱</div>
             <div class="row-label">
               <div class="row-label-text">Hours</div>
-              <div class="row-label-sub">1 hr minimum · +$150/hr</div>
+              <div class="row-label-sub">1 hr minimum · +$175/hr</div>
             </div>
             <div class="stepper">
               <button class="step-btn" onclick="changeHours(-1)">−</button>
@@ -868,11 +868,11 @@ let eventCountyName = null;
 
 const S = {
   guestTiers: [
-    { guests: 50,   price: 500  },
+    { guests: 50,   price: 550  },
     { guests: 100,  price: 700  },
-    { guests: 150,  price: 900  },
-    { guests: 200,  price: 1100 },
-    { guests: 9999, price: 1300 },
+    { guests: 150,  price: 1000 },
+    { guests: 200,  price: 1300 },
+    { guests: 9999, price: 1600 },
   ],
   travelTiers: [
     { miles: 10,   fee: 0   },
@@ -1249,7 +1249,7 @@ function compute() {
   const outdoorP  = num('outdoorPct');
   const basePrice = getBase(guests);
   const extraHrs  = Math.max(0, hours - 1);
-  const extraCost = extraHrs * 150;
+  const extraCost = extraHrs * 175;
   const outdoor   = (!isIndoor && basePrice) ? basePrice * outdoorP / 100 : 0;
 
   let travel = 0, miles = null;
@@ -1322,7 +1322,7 @@ function updateQuote() {
   h += `<div class="q-sec-header">Taxable Items</div>`;
   h += `<div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin:0 18px;">`;
   h += qr(`Base Package · ${q.guests} guests · ${q.hours}h`, q.basePrice, false, true);
-  if (q.extraHrs > 0) h += qr(`Add'l Hours (${q.extraHrs} × $200)`, q.extraCost, true);
+  if (q.extraHrs > 0) h += qr(`Add'l Hours (${q.extraHrs} × $175)`, q.extraCost, true);
   if (q.outdoor  > 0) h += qr(`Outdoor Upcharge (+${q.outdoorP}%)`, q.outdoor, true);
   q.addons.forEach(a => h += qr(a.lbl, a.amt, true));
   h += `</div>`;
@@ -1382,7 +1382,7 @@ function buildText() {
   lines.push(`Hours  : ${q.hours}  |  Guests: ${q.guests}`);
   lines.push('', 'BREAKDOWN', '────────────────────────────────────');
   lines.push(`${pad('Base Package')} ${fmt(q.basePrice||0)}`);
-  if (q.extraHrs > 0) lines.push(`${pad(`Add'l Hours (${q.extraHrs}×$200)`)} ${fmt(q.extraCost)}`);
+  if (q.extraHrs > 0) lines.push(`${pad(`Add'l Hours (${q.extraHrs}×$175)`)} ${fmt(q.extraCost)}`);
   if (q.outdoor  > 0) lines.push(`${pad(`Outdoor (+${q.outdoorP}%)`)} ${fmt(q.outdoor)}`);
   q.addons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
   lines.push('────────────────────────────────────');
