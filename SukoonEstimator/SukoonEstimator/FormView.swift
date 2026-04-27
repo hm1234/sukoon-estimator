@@ -34,6 +34,14 @@ struct FormView: View {
     // MARK: - Event Details Section
     var eventSection: some View {
         Section("Event Details") {
+            // Guest Count
+            HStack(spacing: 12) {
+                iconBadge("person.2.fill", color: .init(red: 42/255, green: 21/255, blue: 8/255))
+                TextField("Guest Count (e.g. 75)", text: $state.guestCount)
+                    .keyboardType(.numberPad)
+                    .focused($focused, equals: .guests)
+            }
+
             // Event Zip
             HStack(spacing: 12) {
                 iconBadge("location.fill", color: .init(red: 42/255, green: 21/255, blue: 8/255))
@@ -64,14 +72,6 @@ struct FormView: View {
                     "Hours: \(state.hoursCount)\(state.hoursCount > 1 ? " (+\((state.hoursCount-1))×$200)" : " (min)")",
                     value: $state.hoursCount, in: 1...24
                 )
-            }
-
-            // Guest Count
-            HStack(spacing: 12) {
-                iconBadge("person.2.fill", color: .init(red: 42/255, green: 21/255, blue: 8/255))
-                TextField("Guest Count (e.g. 75)", text: $state.guestCount)
-                    .keyboardType(.numberPad)
-                    .focused($focused, equals: .guests)
             }
         }
         .listRowBackground(Color.sukoonCard)
