@@ -927,6 +927,31 @@ const CR = {
   '13301':8.00,'13303':8.00,'13305':8.00,'13307':8.00,'13309':7.00,
   '13311':8.00,'13313':9.00,'13315':7.00,'13317':8.00,
 };
+// Georgia county name → tax rate (matches Nominatim reverse geocode output)
+const GN = {
+  'Appling':8,'Atkinson':8,'Bacon':8,'Baker':8,'Baldwin':8,'Banks':9,'Barrow':8,'Bartow':7,
+  'Ben Hill':8,'Berrien':9,'Bibb':8,'Bleckley':8,'Brantley':8,'Brooks':8,'Bryan':9,'Bulloch':9,
+  'Burke':7,'Butts':8,'Calhoun':8,'Camden':7,'Candler':9,'Carroll':7,'Catoosa':7,'Charlton':7,
+  'Chatham':7,'Chattahoochee':9,'Chattooga':9,'Cherokee':7,'Clarke':8,'Clay':9,'Clayton':8,'Clinch':8,
+  'Cobb':6,'Coffee':8,'Colquitt':9,'Columbia':8,'Cook':9,'Coweta':8,'Crawford':8,'Crisp':8,
+  'Dade':7,'Dawson':8,'Decatur':9,'DeKalb':8,'Dodge':8,'Dooly':8,'Dougherty':8,'Douglas':7,
+  'Early':8,'Echols':8,'Effingham':8,'Elbert':9,'Emanuel':9,'Evans':9,'Fannin':7,'Fayette':7,
+  'Floyd':7,'Forsyth':7,'Franklin':7,'Fulton':7.75,'Gilmer':7,'Glascock':8,'Glynn':7,'Gordon':8,
+  'Grady':8,'Greene':8,'Gwinnett':6,'Habersham':7,'Hall':7,'Hancock':8,'Haralson':8,'Harris':8,
+  'Hart':7,'Heard':7,'Henry':8,'Houston':7,'Irwin':8,'Jackson':8,'Jasper':8,'Jeff Davis':8,
+  'Jefferson':9,'Jenkins':8,'Johnson':8,'Jones':7,'Lamar':9,'Lanier':8,'Laurens':8,'Lee':8,
+  'Liberty':9,'Lincoln':9,'Long':9,'Lowndes':8,'Lumpkin':8,'McDuffie':9,'McIntosh':8,'Macon':8,
+  'Madison':8,'Marion':8,'Meriwether':8,'Miller':8,'Mitchell':8,'Monroe':8,'Montgomery':9,
+  'Morgan':8,'Murray':8,'Muscogee':8,'Newton':8,'Oconee':9,'Oglethorpe':9,'Paulding':7,
+  'Peach':8,'Pickens':9,'Pierce':7,'Pike':9,'Polk':7,'Pulaski':8,'Putnam':7,'Quitman':7,
+  'Rabun':8,'Randolph':8,'Richmond':8,'Rockdale':8,'Schley':8,'Screven':8.5,'Seminole':7,
+  'Spalding':9,'Stephens':8,'Stewart':8,'Sumter':7,'Talbot':7,'Taliaferro':8,'Tattnall':8,
+  'Taylor':8,'Telfair':8,'Terrell':8,'Thomas':8,'Tift':8,'Toombs':8,'Towns':8,'Treutlen':8,
+  'Troup':8,'Turner':8,'Twiggs':8,'Union':7,'Upson':9,'Walker':8,'Walton':7,'Ware':9,
+  'Warren':8,'Washington':7,'Wayne':8,'Webster':9,'Wheeler':9,'White':8,'Whitfield':8,
+  'Wilcox':8,'Wilkes':8,'Wilkinson':7,'Worth':8
+};
+
 
 // ═══════════════════════════════════════════════
 // INIT
@@ -1100,11 +1125,11 @@ async function doZipLookup(zip, type) {
 
       // Chain county lookup via ZIP (Census Bureau Geocoder — free, no API key)
       try {
-        const county = await lookupCountyByZip(zip.toString().padStart(5,'0'));
+        const county = await lookupCountyByZip(zip.toString().padStart(5,'0'), coords.lat, coords.lon);
         if (county) {
           eventCountyName = county.name;
           el.innerHTML = `📍 ${coords.city}, ${coords.state}<span class="zip-county">${county.name} County</span>`;
-          const countyRate = CR[county.fips];
+          const countyRate = GN[county.name];
           if (countyRate !== undefined) {
             $('taxRate').value = countyRate.toFixed(2);
             updateQuote();
@@ -1122,14 +1147,17 @@ async function doZipLookup(zip, type) {
   }
 }
 
-async function lookupCountyByZip(zip) {
-  const url = `https://geocoding.geo.census.gov/geocoder/geographies/address?zip=${zip}&benchmark=Public_AR_Current&vintage=Current_Vintage&layers=Counties&format=json`;
-  const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
+async function lookupCountyByZip(zip, lat, lon) {
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+  const r = await fetch(url, {
+    signal: AbortSignal.timeout(6000),
+    headers: { 'User-Agent': 'SukoonCoffeeEstimator/1.0' }
+  });
   const d = await r.json();
-  const counties = d?.result?.geographies?.Counties;
-  if (!counties || !counties.length) return null;
-  const c = counties[0];
-  return { name: c.NAME, fips: c.STATE + c.COUNTY };
+  const raw = d?.address?.county || '';
+  const name = raw.replace(/ County$/i, '').trim();
+  if (!name) return null;
+  return { name };
 }
 
 // ═══════════════════════════════════════════════
