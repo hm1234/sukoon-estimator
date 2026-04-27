@@ -971,7 +971,13 @@ window.addEventListener('DOMContentLoaded', () => {
         const saved = JSON.parse(raw);
         if (saved.homeZip) { $('homeZip').value = saved.homeZip; doZipLookup(saved.homeZip, 'home'); }
         if (saved.outdoorPct !== undefined) $('outdoorPct').value = saved.outdoorPct;
-        if (saved.guestTiers)  S.guestTiers  = saved.guestTiers;
+        if (saved.guestTiers) {
+          // Migrate old default pricing to updated tiers
+          const OLD = [500,700,900,1100,1300];
+          const isOld = saved.guestTiers.length === 5 &&
+            saved.guestTiers.every((t,i) => t.price === OLD[i]);
+          S.guestTiers = isOld ? S.guestTiers : saved.guestTiers;
+        }
         if (saved.travelTiers) S.travelTiers = saved.travelTiers;
       } catch(e) {}
     }
