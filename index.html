@@ -1098,9 +1098,9 @@ async function doZipLookup(zip, type) {
       if (stateRate !== undefined) $('taxRate').value = stateRate.toFixed(2);
       updateQuote();
 
-      // Chain county lookup (Census Bureau Geocoder — free, no API key)
+      // Chain county lookup via ZIP (Census Bureau Geocoder — free, no API key)
       try {
-        const county = await lookupCounty(coords.lat, coords.lon);
+        const county = await lookupCountyByZip(zip.toString().padStart(5,'0'));
         if (county) {
           eventCountyName = county.name;
           el.innerHTML = `📍 ${coords.city}, ${coords.state}<span class="zip-county">${county.name} County</span>`;
@@ -1122,9 +1122,9 @@ async function doZipLookup(zip, type) {
   }
 }
 
-async function lookupCounty(lat, lon) {
-  const url = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lon}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Vintage&layers=Counties&format=json`;
-  const r = await fetch(url);
+async function lookupCountyByZip(zip) {
+  const url = `https://geocoding.geo.census.gov/geocoder/geographies/address?zip=${zip}&benchmark=Public_AR_Current&vintage=Current_Vintage&layers=Counties&format=json`;
+  const r = await fetch(url, { signal: AbortSignal.timeout(6000) });
   const d = await r.json();
   const counties = d?.result?.geographies?.Counties;
   if (!counties || !counties.length) return null;
