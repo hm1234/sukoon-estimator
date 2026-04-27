@@ -1463,7 +1463,14 @@ async function workerLoad() {
     if (cfg && Object.keys(cfg).length > 0) {
       if (cfg.homeZip)     { $('homeZip').value = cfg.homeZip; doZipLookup(cfg.homeZip, 'home'); }
       if (cfg.outdoorPct !== undefined) $('outdoorPct').value = cfg.outdoorPct;
-      if (cfg.guestTiers)  { S.guestTiers  = cfg.guestTiers;  renderGuestTiers(); }
+      if (cfg.guestTiers) {
+        const OLD = [500,700,900,1100,1300];
+        const isOld = cfg.guestTiers.length === 5 &&
+          cfg.guestTiers.every((t,i) => t.price === OLD[i]);
+        if (!isOld) { S.guestTiers = cfg.guestTiers; }
+        renderGuestTiers();
+        if (isOld) { scheduleWorkerSave(); } // push corrected tiers back to cloud
+      }
       if (cfg.travelTiers) { S.travelTiers = cfg.travelTiers; renderTravelTiers(); }
       localStorage.setItem('sukoon_ios_v1', JSON.stringify(cfg));
       updateQuote();
