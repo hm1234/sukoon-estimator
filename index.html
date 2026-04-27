@@ -1341,11 +1341,11 @@ function updateQuote() {
   h += `<div class="q-sec-header">Totals</div>`;
   h += `<div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin:0 18px;">`;
   h += qr('Taxable Subtotal', q.taxableSubtotal);
-  if (q.taxRate > 0) h += qr(`Tax (${q.taxRate}%)`, q.taxAmt, true);
   if (hasNonTax) {
     const nonTaxTotal = q.nonTaxableAddonAmt + q.travel;
     h += qr('Non-Taxable Items', nonTaxTotal, true);
   }
+  if (q.taxRate > 0) h += qr(`Tax (${q.taxRate}%)`, q.taxAmt, true);
   h += `<div class="q-row">
     <span class="q-label q-bold">Total</span>
     <span class="q-amount white">$${q.total.toFixed(2)}</span>
@@ -1387,7 +1387,6 @@ function buildText() {
   q.addons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
   lines.push('────────────────────────────────────');
   lines.push(`${pad('Taxable Subtotal')} ${fmt(q.taxableSubtotal)}`);
-  if (q.taxRate > 0) lines.push(`${pad(`Tax (${q.taxRate}%)`)} ${fmt(q.taxAmt)}`);
 
   const hasNonTax = q.nonTaxableAddons.length > 0 || q.miles !== null;
   if (hasNonTax) {
@@ -1395,6 +1394,7 @@ function buildText() {
     q.nonTaxableAddons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
     if (q.miles !== null) lines.push(`${pad(`Travel (${Math.round(q.miles)} mi)`)} ${fmt(q.travel)}`);
   }
+  if (q.taxRate > 0) lines.push(`${pad(`Tax (${q.taxRate}%)`)} ${fmt(q.taxAmt)}`);
 
   lines.push('════════════════════════════════════');
   lines.push(`${pad('TOTAL')} ${fmt(q.total)}`);
