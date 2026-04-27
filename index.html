@@ -676,6 +676,18 @@
             </label>
           </div>
 
+          <div class="row">
+            <div class="row-icon icon-dark">🖨️</div>
+            <div class="row-label">
+              <div class="row-label-text">Ripple Foam Printing</div>
+              <div class="row-label-sub">Logo on every drink · price by guest count</div>
+            </div>
+            <label class="ios-toggle">
+              <input type="checkbox" id="chkRipple" onchange="updateQuote();"/>
+              <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
+            </label>
+          </div>
+
         </div>
       </div>
 
@@ -868,6 +880,7 @@ let eventCountyName = null;
 
 const S = {
   guestTiers: [
+    { guests: 25,   price: 450  },
     { guests: 50,   price: 550  },
     { guests: 100,  price: 700  },
     { guests: 150,  price: 1000 },
@@ -973,9 +986,10 @@ window.addEventListener('DOMContentLoaded', () => {
         if (saved.outdoorPct !== undefined) $('outdoorPct').value = saved.outdoorPct;
         if (saved.guestTiers) {
           // Migrate old default pricing to updated tiers
-          const OLD = [500,700,900,1100,1300];
-          const isOld = saved.guestTiers.length === 5 &&
-            saved.guestTiers.every((t,i) => t.price === OLD[i]);
+          const OLD5 = [500,700,900,1100,1300];
+          const OLD6 = [550,700,1000,1300,1600];
+          const isOld = (saved.guestTiers.length === 5 && saved.guestTiers.every((t,i) => t.price === OLD5[i])) ||
+            (saved.guestTiers.length === 5 && saved.guestTiers.every((t,i) => t.price === OLD6[i]));
           S.guestTiers = isOld ? S.guestTiers : saved.guestTiers;
         }
         if (saved.travelTiers) S.travelTiers = saved.travelTiers;
@@ -1268,6 +1282,11 @@ function compute() {
   const addons = [];
   if ($('chkMilk').checked)     addons.push({ lbl:'Alt Milk',                          amt: num('priceMilk') });
   if ($('chkStickers').checked) addons.push({ lbl:'Custom Stickers',                   amt: num('priceStickers') });
+  if ($('chkRipple').checked) {
+    const g = guests || 0;
+    const rippleAmt = g <= 25 ? 75 : g <= 50 ? 125 : g <= 100 ? 175 : g <= 150 ? 225 : 275;
+    addons.push({ lbl:'Ripple Foam Printing', amt: rippleAmt });
+  }
   if ($('chkSyrups').checked)   addons.push({ lbl:`Alt Syrups (${counts.syrups}×)`,   amt: counts.syrups * 20 });
   if ($('chkSauces').checked)   addons.push({ lbl:`Alt Sauces (${counts.sauces}×)`,   amt: counts.sauces * 20 });
   if ($('chkHotChoc').checked)  addons.push({ lbl:'Hot Chocolate',                     amt: num('priceHotChoc') });
@@ -1655,7 +1674,7 @@ function resetAll() {
   eventCountyName = null;
   $('eventZipInfo').style.display = 'none';
   $('taxRate').value = 8.25;
-  ['chkPower','chkMilk','chkStickers','chkSyrups','chkSauces','chkHotChoc']
+  ['chkPower','chkMilk','chkStickers','chkSyrups','chkSauces','chkHotChoc','chkRipple']
     .forEach(id => $(id).checked = false);
   ['priceMilk','priceHotChoc']
     .forEach(id => { $(id).style.display='none'; $(id).value=''; });
