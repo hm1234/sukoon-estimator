@@ -81,7 +81,7 @@ struct QuoteView: View {
                 qRow("Base Package · \(q.guests) guests · \(q.hours)h",
                      amount: q.basePrice ?? 0, bold: true)
                 if q.extraHrs > 0 {
-                    qRow("Add'l Hours (\(q.extraHrs) × $150)", amount: q.extraCost, sub: true)
+                    qRow("Add'l Hours (\(q.extraHrs) × $200)", amount: q.extraCost, sub: true)
                 }
                 if q.outdoorCharge > 0 {
                     qRow("Outdoor Upcharge (+\(Int(q.outdoorPct))%)", amount: q.outdoorCharge, sub: true)

@@ -13,11 +13,12 @@ class AppState: ObservableObject {
     @Published var outdoorPct: Double = 10 { didSet { saveSettings() } }
 
     @Published var guestTiers: [GuestTier] = [
-        GuestTier(guests: 50,   price: 500),
+        GuestTier(guests: 50,   price: 550),
         GuestTier(guests: 100,  price: 700),
-        GuestTier(guests: 150,  price: 900),
-        GuestTier(guests: 200,  price: 1100),
-        GuestTier(guests: nil,  price: 1300),
+        GuestTier(guests: 150,  price: 1000),
+        GuestTier(guests: 200,  price: 1300),
+        GuestTier(guests: 250,  price: 1600),
+        GuestTier(guests: nil,  price: 1600),
     ] { didSet { saveSettings() } }
 
     @Published var travelTiers: [TravelTier] = [
@@ -34,7 +35,7 @@ class AppState: ObservableObject {
     @Published var eventZip    = "" { didSet { if eventZip.count >= 5 { scheduleEventZipLookup() } else { eventCoords = nil; eventZipStatus = .idle; eventCountyName = nil } } }
     @Published var eventCountyName: String? = nil
     @Published var taxRate     = 8.25
-    @Published var hoursCount  = 1
+    @Published var hoursCount  = 2
     @Published var guestCount  = ""
     @Published var isIndoor    = true
 
@@ -43,15 +44,13 @@ class AppState: ObservableObject {
     @Published var altMilk        = false
     @Published var milkPrice      = ""
     @Published var stickers       = false
-    @Published var stickersPrice  = ""
+    @Published var stickersPrice  = "85"
     @Published var altSyrups      = false
     @Published var syrupsCount    = 1
     @Published var altSauces      = false
     @Published var saucesCount    = 1
     @Published var hotChoc        = false
     @Published var hotChocPrice   = ""
-    @Published var coldFoam       = false
-    @Published var coldFoamPrice  = ""
 
     // MARK: - Zip State
     struct Coords { let lat, lon: Double; let city, state: String }
@@ -84,7 +83,7 @@ class AppState: ObservableObject {
         let guests    = Int(guestCount) ?? 0
         let base      = getBasePrice(guests: guests)
         let extraHrs  = max(0, hoursCount - 1)
-        let extraCost = Double(extraHrs) * 150
+        let extraCost = Double(extraHrs) * 200
         let outdoor   = (!isIndoor && base != nil) ? (base! * outdoorPct / 100) : 0
 
         var travelMiles: Double? = nil
@@ -99,10 +98,9 @@ class AppState: ObservableObject {
         var addons: [Quote.AddonLine] = []
         if altMilk   { addons.append(.init(label: "Alt Milk",                     amount: Double(milkPrice) ?? 0)) }
         if stickers  { addons.append(.init(label: "Custom Stickers",              amount: Double(stickersPrice) ?? 0)) }
-        if altSyrups { addons.append(.init(label: "Alt Syrups (\(syrupsCount)×)", amount: Double(syrupsCount) * 15)) }
-        if altSauces { addons.append(.init(label: "Alt Sauces (\(saucesCount)×)", amount: Double(saucesCount) * 9)) }
+        if altSyrups { addons.append(.init(label: "Alt Syrups (\(syrupsCount)×)", amount: Double(syrupsCount) * 20)) }
+        if altSauces { addons.append(.init(label: "Alt Sauces (\(saucesCount)×)", amount: Double(saucesCount) * 20)) }
         if hotChoc   { addons.append(.init(label: "Hot Chocolate",                amount: Double(hotChocPrice) ?? 0)) }
-        if coldFoam  { addons.append(.init(label: "Cold Foam / Whipped Cream",    amount: Double(coldFoamPrice) ?? 0)) }
 
         // Non-taxable addons: equipment / fees
         var nonTaxableAddons: [Quote.AddonLine] = []
@@ -250,7 +248,7 @@ class AppState: ObservableObject {
         lines.append("Hours  : \(q.hours)  |  Guests: \(q.guests)")
         lines += ["", "BREAKDOWN", "────────────────────────────────────"]
         lines.append("\(pad("Base Package")) \(fmt(q.basePrice ?? 0))")
-        if q.extraHrs > 0      { lines.append("\(pad("Add'l Hours (\(q.extraHrs)×$150)")) \(fmt(q.extraCost))") }
+        if q.extraHrs > 0      { lines.append("\(pad("Add'l Hours (\(q.extraHrs)×$200)")) \(fmt(q.extraCost))") }
         if q.outdoorCharge > 0 { lines.append("\(pad("Outdoor (+\(Int(q.outdoorPct))%)")) \(fmt(q.outdoorCharge))") }
         for a in q.addons      { lines.append("\(pad(a.label)) \(fmt(a.amount))") }
         lines.append("────────────────────────────────────")
@@ -269,14 +267,13 @@ class AppState: ObservableObject {
     // MARK: - Reset
     func resetForm() {
         clientName = ""; eventName = ""; eventZip = ""; taxRate = 8.25
-        hoursCount = 1; guestCount = ""; isIndoor = true
+        hoursCount = 2; guestCount = ""; isIndoor = true
         powerSupply = false
         altMilk = false;    milkPrice = ""
-        stickers = false;   stickersPrice = ""
+        stickers = false;   stickersPrice = "85"
         altSyrups = false;  syrupsCount = 1
         altSauces = false;  saucesCount = 1
         hotChoc = false;    hotChocPrice = ""
-        coldFoam = false;   coldFoamPrice = ""
         eventCoords = nil;  eventZipStatus = .idle;  eventCountyName = nil
     }
 

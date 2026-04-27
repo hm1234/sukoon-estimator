@@ -4,14 +4,13 @@ struct FormView: View {
     @EnvironmentObject var state: AppState
     @FocusState private var focused: Field?
 
-    enum Field: Hashable { case client, event, zip, tax, guests, milkPrice, stickersPrice, hotChocPrice, coldFoamPrice }
+    enum Field: Hashable { case zip, tax, guests, milkPrice, stickersPrice, hotChocPrice }
 
     @State private var showResetConfirm = false
 
     var body: some View {
         NavigationStack {
             List {
-                clientSection
                 eventSection
                 locationSection
                 addonsSection
@@ -30,23 +29,6 @@ struct FormView: View {
                 }
             }
         }
-    }
-
-    // MARK: - Client Section
-    var clientSection: some View {
-        Section("Client & Event") {
-            HStack(spacing: 12) {
-                iconBadge("person.fill", color: .init(red: 61/255, green: 26/255, blue: 8/255))
-                TextField("Client Name", text: $state.clientName)
-                    .focused($focused, equals: .client)
-            }
-            HStack(spacing: 12) {
-                iconBadge("party.popper.fill", color: .init(red: 61/255, green: 26/255, blue: 8/255))
-                TextField("Event (Birthday, Wedding…)", text: $state.eventName)
-                    .focused($focused, equals: .event)
-            }
-        }
-        .listRowBackground(Color.sukoonCard)
     }
 
     // MARK: - Event Details Section
@@ -79,7 +61,7 @@ struct FormView: View {
             HStack(spacing: 12) {
                 iconBadge("clock.fill", color: .init(red: 42/255, green: 21/255, blue: 8/255))
                 Stepper(
-                    "Hours: \(state.hoursCount)\(state.hoursCount > 1 ? " (+\((state.hoursCount-1))×$150)" : " (min)")",
+                    "Hours: \(state.hoursCount)\(state.hoursCount > 1 ? " (+\((state.hoursCount-1))×$200)" : " (min)")",
                     value: $state.hoursCount, in: 1...24
                 )
             }
@@ -136,28 +118,23 @@ struct FormView: View {
                            hint: "Oat, Almond, Coconut… (enter cost)",
                            isOn: $state.altMilk, price: $state.milkPrice, field: .milkPrice)
 
-            // Stickers
+            // Stickers — default $85, editable
             addonPriceRow("Custom Stickers", icon: "star.fill", iconColor: .init(red: 50/255, green: 35/255, blue: 10/255),
-                           hint: "Paste Sticker Lab quoted price",
+                           hint: "Up to 200 · change to $110 for up to 250",
                            isOn: $state.stickers, price: $state.stickersPrice, field: .stickersPrice)
 
-            // Alt Syrups
+            // Alt Syrups — $20/syrup
             addonCounterRow("Alt Syrups", icon: "drop", iconColor: .init(red: 40/255, green: 25/255, blue: 15/255),
-                             unitLabel: "$15 / syrup", isOn: $state.altSyrups, count: $state.syrupsCount, unitPrice: 15)
+                             unitLabel: "$20 / syrup", isOn: $state.altSyrups, count: $state.syrupsCount, unitPrice: 20)
 
-            // Alt Sauces
+            // Alt Sauces — $20/sauce
             addonCounterRow("Alt Sauces", icon: "fork.knife", iconColor: .init(red: 40/255, green: 25/255, blue: 15/255),
-                             unitLabel: "$9 / sauce", isOn: $state.altSauces, count: $state.saucesCount, unitPrice: 9)
+                             unitLabel: "$20 / sauce", isOn: $state.altSauces, count: $state.saucesCount, unitPrice: 20)
 
             // Hot Chocolate
             addonPriceRow("Hot Chocolate", icon: "mug.fill", iconColor: .init(red: 50/255, green: 20/255, blue: 10/255),
                            hint: "Enter your price",
                            isOn: $state.hotChoc, price: $state.hotChocPrice, field: .hotChocPrice)
-
-            // Cold Foam
-            addonPriceRow("Cold Foam / Whipped Cream", icon: "cloud.fill", iconColor: .init(red: 30/255, green: 30/255, blue: 40/255),
-                           hint: "Enter your price",
-                           isOn: $state.coldFoam, price: $state.coldFoamPrice, field: .coldFoamPrice)
         }
     }
 
