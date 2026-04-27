@@ -1260,7 +1260,7 @@ function compute() {
 function updateQuote() {
   const q        = compute();
   const client   = '';
-  const event    = $('eventName').value.trim();
+  const event    = '';
   const hasQuote = q.guests > 0 && q.basePrice !== null;
   const content  = $('quoteContent');
   const actions  = $('quoteActions');
@@ -1333,7 +1333,7 @@ function updateQuote() {
 function buildText() {
   const q      = compute();
   const client = '';
-  const event  = $('eventName').value.trim();
+  const event  = '';
   const zip    = $('eventZip').value.trim();
   const city   = eventCoords ? ` · ${eventCoords.city}, ${eventCoords.state}` : '';
   const fmt    = v => '$' + v.toFixed(2);
