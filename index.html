@@ -883,10 +883,10 @@ const S = {
   guestTiers: [
     { guests: 25,   price: 399  },
     { guests: 50,   price: 499  },
-    { guests: 100,  price: 750  },
+    { guests: 100,  price: 799  },
     { guests: 150,  price: 1050 },
-    { guests: 200,  price: 1350 },
-    { guests: 9999, price: 1600 },
+    { guests: 200,  price: 1400 },
+    { guests: 9999, price: 1650 },
   ],
   travelTiers: [
     { miles: 10,   fee: 0   },
@@ -1482,7 +1482,7 @@ async function workerLoad() {
       if (cfg.guestTiers) {
         // Migration: reset stale tiers to new defaults
         const prices = cfg.guestTiers.map(t => t.price).join(',');
-        const stale  = ['500,700,900,1100,1300','550,700,1000,1300,1600','450,550,700,1000,1300,1600'];
+        const stale  = ['500,700,900,1100,1300','550,700,1000,1300,1600','450,550,700,1000,1300,1600','399,499,750,1050,1350,1600'];
         if (stale.some(s => prices.startsWith(s))) {
           cfg.guestTiers = S.guestTiers; // use new defaults
           pushWorkerSave();              // update cloud immediately
