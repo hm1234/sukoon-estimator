@@ -522,25 +522,6 @@
     <!-- ══ PAGE: FORM ══ -->
     <div class="page active" id="pageForm">
 
-      <!-- Client -->
-      <div class="section">
-        <div class="section-header">Client &amp; Event</div>
-        <div class="group">
-          <div class="row">
-            <div class="row-icon icon-brown">👤</div>
-            <div class="row-label">
-              <input class="inline-full" id="clientName" type="text" placeholder="Client Name" oninput="updateQuote()" autocomplete="off"/>
-            </div>
-          </div>
-          <div class="row">
-            <div class="row-icon icon-brown">🎉</div>
-            <div class="row-label">
-              <input class="inline-full" id="eventName" type="text" placeholder="Event (Birthday, Wedding…)" oninput="updateQuote()" autocomplete="off"/>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- Event Details -->
       <div class="section">
         <div class="section-header">Event Details</div>
@@ -1292,8 +1273,8 @@ function compute() {
 // ═══════════════════════════════════════════════
 function updateQuote() {
   const q        = compute();
-  const client   = $('clientName').value.trim();
-  const event    = $('eventName').value.trim();
+  const client   = '';
+  const event    = '';
   const hasQuote = q.guests > 0 && q.basePrice !== null;
   const content  = $('quoteContent');
   const actions  = $('quoteActions');
@@ -1365,8 +1346,8 @@ function updateQuote() {
 // ═══════════════════════════════════════════════
 function buildText() {
   const q      = compute();
-  const client = $('clientName').value.trim();
-  const event  = $('eventName').value.trim();
+  const client = '';
+  const event  = '';
   const zip    = $('eventZip').value.trim();
   const city   = eventCoords ? ` · ${eventCoords.city}, ${eventCoords.state}` : '';
   const fmt    = v => '$' + v.toFixed(2);
@@ -1638,7 +1619,7 @@ function showSyncMsg(msg, type) {
 // ═══════════════════════════════════════════════
 function resetAll() {
   if (!confirm('Reset all form fields and start a new quote?')) return;
-  ['clientName','eventName','eventZip','guestCount'].forEach(id => $(id).value = '');
+  ['eventZip','guestCount'].forEach(id => $(id).value = '');
   hours = 1; $('hoursVal').textContent = 1;
   isIndoor = true;
   $('segIndoor').classList.add('active');
