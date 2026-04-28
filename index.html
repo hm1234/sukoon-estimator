@@ -521,18 +521,30 @@
 
     <!-- ══ PAGE: FORM ══ -->
     <div class="page active" id="pageForm">
+
+      <!-- Client -->
+      <div class="section">
+        <div class="section-header">Client &amp; Event</div>
+        <div class="group">
+          <div class="row">
+            <div class="row-icon icon-brown">👤</div>
+            <div class="row-label">
+              <input class="inline-full" id="clientName" type="text" placeholder="Client Name" oninput="updateQuote()" autocomplete="off"/>
+            </div>
+          </div>
+          <div class="row">
+            <div class="row-icon icon-brown">🎉</div>
+            <div class="row-label">
+              <input class="inline-full" id="eventName" type="text" placeholder="Event (Birthday, Wedding…)" oninput="updateQuote()" autocomplete="off"/>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Event Details -->
       <div class="section">
         <div class="section-header">Event Details</div>
         <div class="group">
-
-          <div class="row">
-            <div class="row-icon icon-dark">👥</div>
-            <div class="row-label">
-              <div class="row-label-text">Guest Count</div>
-            </div>
-            <input class="inline" id="guestCount" type="number" inputmode="numeric" placeholder="e.g. 75" onchange="updateQuote()" style="width:80px"/>
-          </div>
 
           <div class="row">
             <div class="row-icon icon-dark">📍</div>
@@ -559,15 +571,22 @@
             <div class="row-icon icon-dark">⏱</div>
             <div class="row-label">
               <div class="row-label-text">Hours</div>
-              <div class="row-label-sub">1 hr minimum · +$175/hr</div>
+              <div class="row-label-sub">1 hr minimum · +$150/hr</div>
             </div>
             <div class="stepper">
               <button class="step-btn" onclick="changeHours(-1)">−</button>
-              <span class="step-val" id="hoursVal">2</span>
+              <span class="step-val" id="hoursVal">1</span>
               <button class="step-btn" onclick="changeHours(1)">+</button>
             </div>
           </div>
 
+          <div class="row">
+            <div class="row-icon icon-dark">👥</div>
+            <div class="row-label">
+              <div class="row-label-text">Guest Count</div>
+            </div>
+            <input class="inline" id="guestCount" type="number" inputmode="numeric" placeholder="e.g. 75" onchange="updateQuote()" style="width:80px"/>
+          </div>
 
         </div>
       </div>
@@ -618,9 +637,9 @@
             <div class="row-icon icon-stone">🏷</div>
             <div class="row-label">
               <div class="row-label-text">Custom Stickers</div>
-              <div class="row-label-sub">Default $85 (up to 200) · $110 for up to 250</div>
+              <div class="row-label-sub">Paste Sticker Lab price</div>
             </div>
-            <input class="inline inline-sm" id="priceStickers" type="number" inputmode="decimal" placeholder="$85" value="85" min="0" step="0.01" onchange="updateQuote()" style="display:none"/>
+            <input class="inline inline-sm" id="priceStickers" type="number" inputmode="decimal" placeholder="$0" min="0" step="0.01" onchange="updateQuote()" style="display:none"/>
             <label class="ios-toggle">
               <input type="checkbox" id="chkStickers" onchange="togglePriceField('stickers'); updateQuote();"/>
               <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
@@ -632,7 +651,7 @@
             <div class="row-icon icon-stone">🍯</div>
             <div class="row-label">
               <div class="row-label-text">Alt Syrups</div>
-              <div class="row-label-sub" id="syrupSub">$20 per syrup</div>
+              <div class="row-label-sub" id="syrupSub">$15 per syrup</div>
             </div>
             <div id="syrupCtr" style="display:none;margin-right:10px" class="stepper">
               <button class="step-btn" onclick="changeCnt('syrups',-1)">−</button>
@@ -650,7 +669,7 @@
             <div class="row-icon icon-stone">🫙</div>
             <div class="row-label">
               <div class="row-label-text">Alt Sauces</div>
-              <div class="row-label-sub" id="sauceSub">$20 per sauce</div>
+              <div class="row-label-sub" id="sauceSub">$9 per sauce</div>
             </div>
             <div id="sauceCtr" style="display:none;margin-right:10px" class="stepper">
               <button class="step-btn" onclick="changeCnt('sauces',-1)">−</button>
@@ -676,14 +695,15 @@
             </label>
           </div>
 
+          <!-- Cold Foam -->
           <div class="row">
-            <div class="row-icon icon-dark">🖨️</div>
+            <div class="row-icon icon-stone">☁️</div>
             <div class="row-label">
-              <div class="row-label-text">Ripple Foam Printing</div>
-              <div class="row-label-sub">Logo on every drink · price by guest count</div>
+              <div class="row-label-text">Cold Foam / Whipped Cream</div>
             </div>
+            <input class="inline inline-sm" id="priceColdFoam" type="number" inputmode="decimal" placeholder="$0" min="0" step="0.01" onchange="updateQuote()" style="display:none"/>
             <label class="ios-toggle">
-              <input type="checkbox" id="chkRipple" onchange="updateQuote();"/>
+              <input type="checkbox" id="chkColdFoam" onchange="togglePriceField('coldfoam'); updateQuote();"/>
               <div class="ios-toggle-track"><div class="ios-toggle-thumb"></div></div>
             </label>
           </div>
@@ -871,7 +891,7 @@ let cloudTimer = null;
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-let hours = 2;
+let hours = 1;
 let isIndoor = true;
 const counts = { syrups: 1, sauces: 1 };
 let homeCoords = null;
@@ -880,12 +900,11 @@ let eventCountyName = null;
 
 const S = {
   guestTiers: [
-    { guests: 25,   price: 450  },
-    { guests: 50,   price: 550  },
+    { guests: 50,   price: 500  },
     { guests: 100,  price: 700  },
-    { guests: 150,  price: 1000 },
-    { guests: 200,  price: 1300 },
-    { guests: 9999, price: 1600 },
+    { guests: 150,  price: 900  },
+    { guests: 200,  price: 1100 },
+    { guests: 9999, price: 1300 },
   ],
   travelTiers: [
     { miles: 10,   fee: 0   },
@@ -940,31 +959,6 @@ const CR = {
   '13301':8.00,'13303':8.00,'13305':8.00,'13307':8.00,'13309':7.00,
   '13311':8.00,'13313':9.00,'13315':7.00,'13317':8.00,
 };
-// Georgia county name → tax rate (matches Nominatim reverse geocode output)
-const GN = {
-  'Appling':8,'Atkinson':8,'Bacon':8,'Baker':8,'Baldwin':8,'Banks':9,'Barrow':8,'Bartow':7,
-  'Ben Hill':8,'Berrien':9,'Bibb':8,'Bleckley':8,'Brantley':8,'Brooks':8,'Bryan':9,'Bulloch':9,
-  'Burke':7,'Butts':8,'Calhoun':8,'Camden':7,'Candler':9,'Carroll':7,'Catoosa':7,'Charlton':7,
-  'Chatham':7,'Chattahoochee':9,'Chattooga':9,'Cherokee':7,'Clarke':8,'Clay':9,'Clayton':8,'Clinch':8,
-  'Cobb':6,'Coffee':8,'Colquitt':9,'Columbia':8,'Cook':9,'Coweta':8,'Crawford':8,'Crisp':8,
-  'Dade':7,'Dawson':8,'Decatur':9,'DeKalb':8,'Dodge':8,'Dooly':8,'Dougherty':8,'Douglas':7,
-  'Early':8,'Echols':8,'Effingham':8,'Elbert':9,'Emanuel':9,'Evans':9,'Fannin':7,'Fayette':7,
-  'Floyd':7,'Forsyth':7,'Franklin':7,'Fulton':7.75,'Gilmer':7,'Glascock':8,'Glynn':7,'Gordon':8,
-  'Grady':8,'Greene':8,'Gwinnett':6,'Habersham':7,'Hall':7,'Hancock':8,'Haralson':8,'Harris':8,
-  'Hart':7,'Heard':7,'Henry':8,'Houston':7,'Irwin':8,'Jackson':8,'Jasper':8,'Jeff Davis':8,
-  'Jefferson':9,'Jenkins':8,'Johnson':8,'Jones':7,'Lamar':9,'Lanier':8,'Laurens':8,'Lee':8,
-  'Liberty':9,'Lincoln':9,'Long':9,'Lowndes':8,'Lumpkin':8,'McDuffie':9,'McIntosh':8,'Macon':8,
-  'Madison':8,'Marion':8,'Meriwether':8,'Miller':8,'Mitchell':8,'Monroe':8,'Montgomery':9,
-  'Morgan':8,'Murray':8,'Muscogee':8,'Newton':8,'Oconee':9,'Oglethorpe':9,'Paulding':7,
-  'Peach':8,'Pickens':9,'Pierce':7,'Pike':9,'Polk':7,'Pulaski':8,'Putnam':7,'Quitman':7,
-  'Rabun':8,'Randolph':8,'Richmond':8,'Rockdale':8,'Schley':8,'Screven':8.5,'Seminole':7,
-  'Spalding':9,'Stephens':8,'Stewart':8,'Sumter':7,'Talbot':7,'Taliaferro':8,'Tattnall':8,
-  'Taylor':8,'Telfair':8,'Terrell':8,'Thomas':8,'Tift':8,'Toombs':8,'Towns':8,'Treutlen':8,
-  'Troup':8,'Turner':8,'Twiggs':8,'Union':7,'Upson':9,'Walker':8,'Walton':7,'Ware':9,
-  'Warren':8,'Washington':7,'Wayne':8,'Webster':9,'Wheeler':9,'White':8,'Whitfield':8,
-  'Wilcox':8,'Wilkes':8,'Wilkinson':7,'Worth':8
-};
-
 
 // ═══════════════════════════════════════════════
 // INIT
@@ -984,14 +978,7 @@ window.addEventListener('DOMContentLoaded', () => {
         const saved = JSON.parse(raw);
         if (saved.homeZip) { $('homeZip').value = saved.homeZip; doZipLookup(saved.homeZip, 'home'); }
         if (saved.outdoorPct !== undefined) $('outdoorPct').value = saved.outdoorPct;
-        if (saved.guestTiers) {
-          // Migrate old default pricing to updated tiers
-          const OLD5 = [500,700,900,1100,1300];
-          const OLD6 = [550,700,1000,1300,1600];
-          const isOld = (saved.guestTiers.length === 5 && saved.guestTiers.every((t,i) => t.price === OLD5[i])) ||
-            (saved.guestTiers.length === 5 && saved.guestTiers.every((t,i) => t.price === OLD6[i]));
-          S.guestTiers = isOld ? S.guestTiers : saved.guestTiers;
-        }
+        if (saved.guestTiers)  S.guestTiers  = saved.guestTiers;
         if (saved.travelTiers) S.travelTiers = saved.travelTiers;
       } catch(e) {}
     }
@@ -1065,7 +1052,7 @@ function changeHours(d) {
 function changeCnt(key, d) {
   counts[key] = Math.max(1, (counts[key] || 1) + d);
   $('val' + key[0].toUpperCase() + key.slice(1)).textContent = counts[key];
-  const rates = { syrups: 20, sauces: 20 };
+  const rates = { syrups: 15, sauces: 9 };
   const sub = key === 'syrups' ? 'syrupSub' : 'sauceSub';
   $(sub).textContent = `${counts[key]} × $${rates[key]} = $${counts[key] * rates[key]}`;
   updateQuote();
@@ -1076,11 +1063,11 @@ function changeCnt(key, d) {
 // ═══════════════════════════════════════════════
 const PRICE_FIELDS = {
   milk: 'priceMilk', stickers: 'priceStickers',
-  hotchoc: 'priceHotChoc'
+  hotchoc: 'priceHotChoc', coldfoam: 'priceColdFoam'
 };
 const CHECK_IDS = {
   milk: 'chkMilk', stickers: 'chkStickers',
-  hotchoc: 'chkHotChoc'
+  hotchoc: 'chkHotChoc', coldfoam: 'chkColdFoam'
 };
 
 function togglePriceField(key) {
@@ -1143,13 +1130,13 @@ async function doZipLookup(zip, type) {
       if (stateRate !== undefined) $('taxRate').value = stateRate.toFixed(2);
       updateQuote();
 
-      // Chain county lookup via ZIP (Census Bureau Geocoder — free, no API key)
+      // Chain county lookup (Census Bureau Geocoder — free, no API key)
       try {
-        const county = await lookupCountyByZip(zip.toString().padStart(5,'0'), coords.lat, coords.lon);
+        const county = await lookupCounty(coords.lat, coords.lon);
         if (county) {
           eventCountyName = county.name;
           el.innerHTML = `📍 ${coords.city}, ${coords.state}<span class="zip-county">${county.name} County</span>`;
-          const countyRate = GN[county.name];
+          const countyRate = CR[county.fips];
           if (countyRate !== undefined) {
             $('taxRate').value = countyRate.toFixed(2);
             updateQuote();
@@ -1167,17 +1154,14 @@ async function doZipLookup(zip, type) {
   }
 }
 
-async function lookupCountyByZip(zip, lat, lon) {
-  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
-  const r = await fetch(url, {
-    signal: AbortSignal.timeout(6000),
-    headers: { 'User-Agent': 'SukoonCoffeeEstimator/1.0' }
-  });
+async function lookupCounty(lat, lon) {
+  const url = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lon}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Vintage&layers=Counties&format=json`;
+  const r = await fetch(url);
   const d = await r.json();
-  const raw = d?.address?.county || '';
-  const name = raw.replace(/ County$/i, '').trim();
-  if (!name) return null;
-  return { name };
+  const counties = d?.result?.geographies?.Counties;
+  if (!counties || !counties.length) return null;
+  const c = counties[0];
+  return { name: c.NAME, fips: c.STATE + c.COUNTY };
 }
 
 // ═══════════════════════════════════════════════
@@ -1268,7 +1252,7 @@ function compute() {
   const taxRate   = num('taxRate');
   const outdoorP  = num('outdoorPct');
   const basePrice = getBase(guests);
-  const extraHrs  = Math.max(0, hours - 1);
+  const extraHrs  = Math.max(0, hours - 2);
   const extraCost = extraHrs * 175;
   const outdoor   = (!isIndoor && basePrice) ? basePrice * outdoorP / 100 : 0;
 
@@ -1282,14 +1266,10 @@ function compute() {
   const addons = [];
   if ($('chkMilk').checked)     addons.push({ lbl:'Alt Milk',                          amt: num('priceMilk') });
   if ($('chkStickers').checked) addons.push({ lbl:'Custom Stickers',                   amt: num('priceStickers') });
-  if ($('chkRipple').checked) {
-    const g = guests || 0;
-    const rippleAmt = g <= 25 ? 75 : g <= 50 ? 125 : g <= 100 ? 175 : g <= 150 ? 225 : 275;
-    addons.push({ lbl:'Ripple Foam Printing', amt: rippleAmt });
-  }
-  if ($('chkSyrups').checked)   addons.push({ lbl:`Alt Syrups (${counts.syrups}×)`,   amt: counts.syrups * 20 });
-  if ($('chkSauces').checked)   addons.push({ lbl:`Alt Sauces (${counts.sauces}×)`,   amt: counts.sauces * 20 });
+  if ($('chkSyrups').checked)   addons.push({ lbl:`Alt Syrups (${counts.syrups}×)`,   amt: counts.syrups * 15 });
+  if ($('chkSauces').checked)   addons.push({ lbl:`Alt Sauces (${counts.sauces}×)`,   amt: counts.sauces * 9 });
   if ($('chkHotChoc').checked)  addons.push({ lbl:'Hot Chocolate',                     amt: num('priceHotChoc') });
+  if ($('chkColdFoam').checked) addons.push({ lbl:'Cold Foam / Whipped Cream',         amt: num('priceColdFoam') });
 
   // Non-taxable addons: equipment / fees
   const nonTaxableAddons = [];
@@ -1312,8 +1292,8 @@ function compute() {
 // ═══════════════════════════════════════════════
 function updateQuote() {
   const q        = compute();
-  const client   = '';
-  const event    = '';
+  const client   = $('clientName').value.trim();
+  const event    = $('eventName').value.trim();
   const hasQuote = q.guests > 0 && q.basePrice !== null;
   const content  = $('quoteContent');
   const actions  = $('quoteActions');
@@ -1366,11 +1346,11 @@ function updateQuote() {
   h += `<div class="q-sec-header">Totals</div>`;
   h += `<div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin:0 18px;">`;
   h += qr('Taxable Subtotal', q.taxableSubtotal);
+  if (q.taxRate > 0) h += qr(`Tax (${q.taxRate}%)`, q.taxAmt, true);
   if (hasNonTax) {
     const nonTaxTotal = q.nonTaxableAddonAmt + q.travel;
     h += qr('Non-Taxable Items', nonTaxTotal, true);
   }
-  if (q.taxRate > 0) h += qr(`Tax (${q.taxRate}%)`, q.taxAmt, true);
   h += `<div class="q-row">
     <span class="q-label q-bold">Total</span>
     <span class="q-amount white">$${q.total.toFixed(2)}</span>
@@ -1385,8 +1365,8 @@ function updateQuote() {
 // ═══════════════════════════════════════════════
 function buildText() {
   const q      = compute();
-  const client = '';
-  const event  = '';
+  const client = $('clientName').value.trim();
+  const event  = $('eventName').value.trim();
   const zip    = $('eventZip').value.trim();
   const city   = eventCoords ? ` · ${eventCoords.city}, ${eventCoords.state}` : '';
   const fmt    = v => '$' + v.toFixed(2);
@@ -1412,6 +1392,7 @@ function buildText() {
   q.addons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
   lines.push('────────────────────────────────────');
   lines.push(`${pad('Taxable Subtotal')} ${fmt(q.taxableSubtotal)}`);
+  if (q.taxRate > 0) lines.push(`${pad(`Tax (${q.taxRate}%)`)} ${fmt(q.taxAmt)}`);
 
   const hasNonTax = q.nonTaxableAddons.length > 0 || q.miles !== null;
   if (hasNonTax) {
@@ -1419,7 +1400,6 @@ function buildText() {
     q.nonTaxableAddons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
     if (q.miles !== null) lines.push(`${pad(`Travel (${Math.round(q.miles)} mi)`)} ${fmt(q.travel)}`);
   }
-  if (q.taxRate > 0) lines.push(`${pad(`Tax (${q.taxRate}%)`)} ${fmt(q.taxAmt)}`);
 
   lines.push('════════════════════════════════════');
   lines.push(`${pad('TOTAL')} ${fmt(q.total)}`);
@@ -1482,14 +1462,7 @@ async function workerLoad() {
     if (cfg && Object.keys(cfg).length > 0) {
       if (cfg.homeZip)     { $('homeZip').value = cfg.homeZip; doZipLookup(cfg.homeZip, 'home'); }
       if (cfg.outdoorPct !== undefined) $('outdoorPct').value = cfg.outdoorPct;
-      if (cfg.guestTiers) {
-        const OLD = [500,700,900,1100,1300];
-        const isOld = cfg.guestTiers.length === 5 &&
-          cfg.guestTiers.every((t,i) => t.price === OLD[i]);
-        if (!isOld) { S.guestTiers = cfg.guestTiers; }
-        renderGuestTiers();
-        if (isOld) { scheduleWorkerSave(); } // push corrected tiers back to cloud
-      }
+      if (cfg.guestTiers)  { S.guestTiers  = cfg.guestTiers;  renderGuestTiers(); }
       if (cfg.travelTiers) { S.travelTiers = cfg.travelTiers; renderTravelTiers(); }
       localStorage.setItem('sukoon_ios_v1', JSON.stringify(cfg));
       updateQuote();
@@ -1665,8 +1638,8 @@ function showSyncMsg(msg, type) {
 // ═══════════════════════════════════════════════
 function resetAll() {
   if (!confirm('Reset all form fields and start a new quote?')) return;
-  ['eventZip','guestCount'].forEach(id => $(id).value = '');
-  hours = 2; $('hoursVal').textContent = 2;
+  ['clientName','eventName','eventZip','guestCount'].forEach(id => $(id).value = '');
+  hours = 1; $('hoursVal').textContent = 1;
   isIndoor = true;
   $('segIndoor').classList.add('active');
   $('segOutdoor').classList.remove('active');
@@ -1674,17 +1647,16 @@ function resetAll() {
   eventCountyName = null;
   $('eventZipInfo').style.display = 'none';
   $('taxRate').value = 8.25;
-  ['chkPower','chkMilk','chkStickers','chkSyrups','chkSauces','chkHotChoc','chkRipple']
+  ['chkPower','chkMilk','chkStickers','chkSyrups','chkSauces','chkHotChoc','chkColdFoam']
     .forEach(id => $(id).checked = false);
-  ['priceMilk','priceHotChoc']
+  ['priceMilk','priceStickers','priceHotChoc','priceColdFoam']
     .forEach(id => { $(id).style.display='none'; $(id).value=''; });
-  $('priceStickers').value = '85';
   $('syrupCtr').style.display = 'none';
   $('sauceCtr').style.display = 'none';
   counts.syrups = 1; counts.sauces = 1;
   $('valSyrups').textContent = 1; $('valSauces').textContent = 1;
-  $('syrupSub').textContent = '$20 per syrup';
-  $('sauceSub').textContent = '$20 per sauce';
+  $('syrupSub').textContent = '$15 per syrup';
+  $('sauceSub').textContent = '$9 per sauce';
   updateQuote();
   goTab('form');
 }
