@@ -556,7 +556,7 @@
             </div>
             <div class="stepper">
               <button class="step-btn" onclick="changeHours(-1)">−</button>
-              <span class="step-val" id="hoursVal">1</span>
+              <span class="step-val" id="hoursVal">2</span>
               <button class="step-btn" onclick="changeHours(1)">+</button>
             </div>
           </div>
@@ -872,7 +872,7 @@ let cloudTimer = null;
 // ═══════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════
-let hours = 1;
+let hours = 2;
 let isIndoor = true;
 const counts = { syrups: 1, sauces: 1 };
 let homeCoords = null;
@@ -903,6 +903,42 @@ const ST = {
   MN:6.875,MS:7,MO:4.23,MT:0,NE:5.5,NV:6.85,NH:0,NJ:6.63,NM:5.13,NY:4,
   NC:4.75,ND:5,OH:5.75,OK:4.5,OR:0,PA:6,RI:7,SC:6,SD:4.5,TN:7,TX:8.25,
   UT:5.95,VT:6,VA:5.3,WA:10.25,WV:6,WI:5,WY:4,DC:6
+};
+
+// Georgia county name → combined sales tax rate (Nominatim returns county name)
+const GN = {
+  'Appling':8,'Atkinson':8,'Bacon':8,'Baker':8,'Baldwin':8,
+  'Banks':9,'Barrow':8,'Bartow':7,'Ben Hill':8,'Berrien':9,
+  'Bibb':8,'Bleckley':8,'Brantley':8,'Brooks':8,'Bryan':9,
+  'Bulloch':9,'Burke':7,'Butts':8,'Calhoun':8,'Camden':7,
+  'Candler':9,'Carroll':7,'Catoosa':7,'Charlton':7,'Chatham':7,
+  'Chattahoochee':9,'Chattooga':9,'Cherokee':7,'Clarke':8,'Clay':9,
+  'Clayton':8,'Clinch':8,'Cobb':6,'Coffee':8,'Colquitt':9,
+  'Columbia':8,'Cook':9,'Coweta':8,'Crawford':8,'Crisp':8,
+  'Dade':7,'Dawson':8,'Decatur':9,'DeKalb':8,'Dodge':8,
+  'Dooly':8,'Dougherty':8,'Douglas':7,'Early':8,'Echols':8,
+  'Effingham':8,'Elbert':9,'Emanuel':9,'Evans':9,'Fannin':7,
+  'Floyd':7,'Forsyth':7,'Franklin':7,'Fulton':7,'Gilmer':7.75,
+  'Glascock':7,'Glynn':8,'Gordon':7,'Grady':8,'Greene':8,
+  'Gwinnett':8,'Habersham':6,'Hall':7,'Hancock':7,'Haralson':8,
+  'Harris':8,'Hart':8,'Heard':7,'Henry':7,'Houston':8,
+  'Irwin':7,'Jackson':8,'Jasper':8,'Jeff Davis':8,'Jefferson':8,
+  'Jenkins':9,'Johnson':8,'Jones':8,'Lamar':7,'Lanier':9,
+  'Laurens':8,'Lee':8,'Liberty':8,'Lincoln':9,'Long':9,
+  'Lowndes':9,'Lumpkin':8,'McDuffie':8,'McIntosh':9,'Macon':8,
+  'Madison':8,'Marion':8,'Meriwether':8,'Miller':8,'Mitchell':9,
+  'Monroe':8,'Montgomery':8,'Morgan':8,'Murray':8,'Muscogee':9,
+  'Newton':9,'Oconee':7,'Oglethorpe':8,'Paulding':9,'Peach':7,
+  'Pickens':9,'Pierce':7,'Pike':8,'Polk':7,'Pulaski':7,
+  'Putnam':8,'Quitman':8,'Rabun':8,'Randolph':8,'Richmond':8,
+  'Rockdale':8.5,'Schley':7,'Screven':9,'Seminole':8,'Spalding':8,
+  'Stephens':7,'Stewart':7,'Sumter':8,'Talbot':8,'Taliaferro':8,
+  'Tattnall':8,'Taylor':8,'Telfair':8,'Terrell':8,'Thomas':8,
+  'Tift':8,'Toombs':8,'Towns':8,'Treutlen':8,'Troup':8,
+  'Turner':7,'Twiggs':9,'Union':8,'Upson':7,'Walker':9,
+  'Walton':8,'Ware':7,'Washington':8,'Wayne':9,'Webster':9,
+  'Wheeler':8,'White':8,'Whitfield':8,'Wilcox':8,'Wilkes':7,
+  'Wilkinson':8,'Worth':9
 };
 
 // Georgia county FIPS → tax rate (GA Dept of Revenue, effective April 1, 2026)
@@ -1025,7 +1061,7 @@ function setLoc(t) {
 // HOURS / COUNTERS
 // ═══════════════════════════════════════════════
 function changeHours(d) {
-  hours = Math.max(1, hours + d);
+  hours = Math.max(2, hours + d);
   $('hoursVal').textContent = hours;
   updateQuote();
 }
@@ -1117,7 +1153,7 @@ async function doZipLookup(zip, type) {
         if (county) {
           eventCountyName = county.name;
           el.innerHTML = `📍 ${coords.city}, ${coords.state}<span class="zip-county">${county.name} County</span>`;
-          const countyRate = CR[county.fips];
+          const countyRate = GN[county.name];
           if (countyRate !== undefined) {
             $('taxRate').value = countyRate.toFixed(2);
             updateQuote();
@@ -1136,13 +1172,13 @@ async function doZipLookup(zip, type) {
 }
 
 async function lookupCounty(lat, lon) {
-  const url = `https://geocoding.geo.census.gov/geocoder/geographies/coordinates?x=${lon}&y=${lat}&benchmark=Public_AR_Current&vintage=Current_Vintage&layers=Counties&format=json`;
-  const r = await fetch(url);
+  const url = `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`;
+  const r = await fetch(url, { headers: { 'Accept-Language': 'en-US,en' } });
   const d = await r.json();
-  const counties = d?.result?.geographies?.Counties;
-  if (!counties || !counties.length) return null;
-  const c = counties[0];
-  return { name: c.NAME, fips: c.STATE + c.COUNTY };
+  const raw = d?.address?.county || d?.address?.state_district || '';
+  if (!raw) return null;
+  const name = raw.replace(/ County$/i, '').trim();
+  return { name };
 }
 
 // ═══════════════════════════════════════════════
@@ -1327,11 +1363,11 @@ function updateQuote() {
   h += `<div class="q-sec-header">Totals</div>`;
   h += `<div style="background:var(--bg2);border-radius:14px;overflow:hidden;margin:0 18px;">`;
   h += qr('Taxable Subtotal', q.taxableSubtotal);
-  if (q.taxRate > 0) h += qr(`Tax (${q.taxRate}%)`, q.taxAmt, true);
   if (hasNonTax) {
     const nonTaxTotal = q.nonTaxableAddonAmt + q.travel;
     h += qr('Non-Taxable Items', nonTaxTotal, true);
   }
+  if (q.taxRate > 0) h += qr(`Tax (${q.taxRate}%)`, q.taxAmt, true);
   h += `<div class="q-row">
     <span class="q-label q-bold">Total</span>
     <span class="q-amount white">$${q.total.toFixed(2)}</span>
@@ -1373,7 +1409,6 @@ function buildText() {
   q.addons.forEach(a => lines.push(`${pad(a.lbl)} ${fmt(a.amt)}`));
   lines.push('────────────────────────────────────');
   lines.push(`${pad('Taxable Subtotal')} ${fmt(q.taxableSubtotal)}`);
-  if (q.taxRate > 0) lines.push(`${pad(`Tax (${q.taxRate}%)`)} ${fmt(q.taxAmt)}`);
 
   const hasNonTax = q.nonTaxableAddons.length > 0 || q.miles !== null;
   if (hasNonTax) {
@@ -1620,7 +1655,7 @@ function showSyncMsg(msg, type) {
 function resetAll() {
   if (!confirm('Reset all form fields and start a new quote?')) return;
   ['eventZip','guestCount'].forEach(id => $(id).value = '');
-  hours = 1; $('hoursVal').textContent = 1;
+  hours = 2; $('hoursVal').textContent = 2;
   isIndoor = true;
   $('segIndoor').classList.add('active');
   $('segOutdoor').classList.remove('active');
