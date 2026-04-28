@@ -881,11 +881,12 @@ let eventCountyName = null;
 
 const S = {
   guestTiers: [
-    { guests: 50,   price: 500  },
-    { guests: 100,  price: 700  },
-    { guests: 150,  price: 900  },
-    { guests: 200,  price: 1100 },
-    { guests: 9999, price: 1300 },
+    { guests: 25,   price: 399  },
+    { guests: 50,   price: 499  },
+    { guests: 100,  price: 750  },
+    { guests: 150,  price: 1050 },
+    { guests: 200,  price: 1350 },
+    { guests: 9999, price: 1600 },
   ],
   travelTiers: [
     { miles: 10,   fee: 0   },
@@ -1478,7 +1479,16 @@ async function workerLoad() {
     if (cfg && Object.keys(cfg).length > 0) {
       if (cfg.homeZip)     { $('homeZip').value = cfg.homeZip; doZipLookup(cfg.homeZip, 'home'); }
       if (cfg.outdoorPct !== undefined) $('outdoorPct').value = cfg.outdoorPct;
-      if (cfg.guestTiers)  { S.guestTiers  = cfg.guestTiers;  renderGuestTiers(); }
+      if (cfg.guestTiers) {
+        // Migration: reset stale tiers to new defaults
+        const prices = cfg.guestTiers.map(t => t.price).join(',');
+        const stale  = ['500,700,900,1100,1300','550,700,1000,1300,1600','450,550,700,1000,1300,1600'];
+        if (stale.some(s => prices.startsWith(s))) {
+          cfg.guestTiers = S.guestTiers; // use new defaults
+          pushWorkerSave();              // update cloud immediately
+        }
+        S.guestTiers = cfg.guestTiers; renderGuestTiers();
+      }
       if (cfg.travelTiers) { S.travelTiers = cfg.travelTiers; renderTravelTiers(); }
       localStorage.setItem('sukoon_ios_v1', JSON.stringify(cfg));
       updateQuote();
